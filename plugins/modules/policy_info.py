@@ -34,9 +34,10 @@ options:
     description: Return only policies whose built-in flag equals this value.
     type: bool
   scope:
-    description: Return only policies with this scope, as filtered by the API.
+    description:
+      - Return only policies with this scope, as filtered by the API.
+      - "Known values for policies: V(any), V(self), V(project). The API accepts any string."
     type: str
-    choices: [system, project]
 seealso:
   - module: kenmoini.automation_orchestrator_config.policy
 """
@@ -74,7 +75,7 @@ resources:
       description: Read access to workflows
       is_builtin: false
       project_id: null
-      scope: system
+      scope: any
       labels: {}
       statements:
         - effect: allow
@@ -91,7 +92,7 @@ def main():
         name=dict(type="str"),
         project=dict(type="str"),
         is_builtin=dict(type="bool"),
-        scope=dict(type="str", choices=["system", "project"]),
+        scope=dict(type="str"),
     )
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
     params = module.params

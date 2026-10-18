@@ -38,3 +38,9 @@ def test_info_filters_passed_as_query(fake_api):
     assert query["project_id"] == PID
     assert query["is_builtin"] == "false"
     assert query["scope"] == "project"
+
+
+def test_info_scope_any_passed_through(fake_api):
+    fake_api.add("GET", LIST, 200, _page())
+    run_module(info_module.main, {"scope": "any"}, fake_api)
+    assert fake_api.calls[0]["query"]["scope"] == "any"

@@ -79,7 +79,7 @@ def test_labels_changed_patch(fake_api):
 
 
 def test_statements_changed_patch(fake_api):
-    new = [{"effect": "allow", "actions": ["workflow:read"], "scope": "any", "conditions": None}]
+    new = [{"effect": "allow", "actions": ["workflow:update", "workflow:read"], "scope": "any", "conditions": None}]
     fake_api.add("GET", LIST, 200, _list(_policy()))
     fake_api.add("PATCH", LIST + "/p1", 200, _policy(statements=new))
     run_module(policy_module.main, {"name": "reader", "statements": new}, fake_api)
@@ -149,3 +149,17 @@ def test_diff_mode_on_update(fake_api):
     fake_api.add("PATCH", LIST + "/p1", 200, _policy(description="new"))
     result = run_module(policy_module.main, {"name": "reader", "description": "new", "_ansible_diff": True}, fake_api)
     assert result["diff"] == {"before": {"description": "old"}, "after": {"description": "new"}}
+
+
+def test_exists_state_creates_but_never_updates(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", LIST, 201, _policy())
+    result = run_module(policy_module.main, {"name": "reader", "statements": STMTS, "state": "exists"}, fake_api)
+    assert result["changed"] is True
+
+    fake_api.calls[:] = []
+    fake_api.routes[:] = []
+    fake_api.add("GET", LIST, 200, _list(_policy()))
+    result = run_module(policy_module.main, {"name": "reader", "description": "other", "state": "exists"}, fake_api)
+    assert result["changed"] is False
+    assert [c["method"] for c in fake_api.calls] == ["GET"]

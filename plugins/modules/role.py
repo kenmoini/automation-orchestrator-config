@@ -192,7 +192,8 @@ def main():
                 if policy is None:
                     module.fail_json(msg="policy '{0}' not found".format(value))
                 value = policy["name"]
-            policies.append(value)
+            if value not in policies:
+                policies.append(value)
 
     desired = module.build_desired(
         {

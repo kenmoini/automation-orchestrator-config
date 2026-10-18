@@ -157,3 +157,18 @@ def test_diff_mode_on_update(fake_api):
     fake_api.add("PATCH", LIST + "/r1", 200, _role(description="new"))
     result = run_module(role_module.main, {"name": "ops", "description": "new", "_ansible_diff": True}, fake_api)
     assert result["diff"] == {"before": {"description": "old"}, "after": {"description": "new"}}
+
+
+def test_rename_rerun_is_idempotent(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_role(name="renamed")))
+    result = run_module(role_module.main, {"name": "ops", "new_name": "renamed", "description": "old"}, fake_api)
+    assert result["changed"] is False
+    assert result["role"]["name"] == "renamed"
+    assert [c["method"] for c in fake_api.calls] == ["GET", "GET"]
+
+
+def test_duplicate_policies_deduplicated(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_role(policies=["a"])))
+    result = run_module(role_module.main, {"name": "ops", "policies": ["a", "a"]}, fake_api)
+    assert result["changed"] is False
+    assert [c["method"] for c in fake_api.calls] == ["GET"]

@@ -34,9 +34,10 @@ options:
     description: Return only roles whose built-in flag equals this value.
     type: bool
   scope:
-    description: Return only roles with this scope, as filtered by the API.
+    description:
+      - Return only roles with this scope, as filtered by the API.
+      - "Known values for roles: V(system), V(project). The API accepts any string."
     type: str
-    choices: [system, project]
   policy_name:
     description: Return only roles that include the policy with this name.
     type: str
@@ -96,7 +97,7 @@ def main():
         name=dict(type="str"),
         project=dict(type="str"),
         is_builtin=dict(type="bool"),
-        scope=dict(type="str", choices=["system", "project"]),
+        scope=dict(type="str"),
         policy_name=dict(type="str"),
     )
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
