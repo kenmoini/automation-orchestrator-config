@@ -1,0 +1,90 @@
+---
+# Export workflow definitions from Automation Orchestrator to JSON files.
+#
+# Usage:
+#   ansible-playbook kenmoini.automation_orchestrator_config.export_workflows \
+#     -e orchestrator_export_dir=./exports \
+#     -e '{"orchestrator_export_projects": ["my-project"]}'
+#
+# Files are written to <orchestrator_export_dir>/<project>/<workflow>.json
+# (default directory: ./orchestrator_exports). Without
+# orchestrator_export_projects, every project is exported.
+#
+# Authentication: the standard role variables (orchestrator_hostname, ...,
+# orchestrator_token, orchestrator_validate_certs, orchestrator_request_timeout)
+# are mapped once through play-level module_defaults for the
+# `group/kenmoini.automation_orchestrator_config.orchestrator` action group,
+# rather than repeated on every task.
+- name: Export Automation Orchestrator workflow definitions
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    __export_dir: "{{ orchestrator_export_dir | default('./orchestrator_exports') }}"
+  module_defaults:
+    group/kenmoini.automation_orchestrator_config.orchestrator:
+      orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+      orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+      orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+      orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+      orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+      orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+      validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+      request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+  tasks:
+    - name: Look up all projects
+      kenmoini.automation_orchestrator_config.project_info:
+      register: __projects
+      when: orchestrator_export_projects is not defined
+
+    - name: Build the list of project names to export
+      ansible.builtin.set_fact:
+        __project_names: >-
+          {{ orchestrator_export_projects
+          if orchestrator_export_projects is defined
+          else __projects.resources | map(attribute='name') | list }}
+
+    - name: Retrieve workflow definitions for each project
+      kenmoini.automation_orchestrator_config.workflow_info:
+        project: "{{ __project }}"
+        include_definition: true
+      loop: "{{ __project_names }}"
+      loop_control:
+        loop_var: __project
+      register: __workflows
+
+    - name: Build the list of workflows to write
+      ansible.builtin.set_fact:
+        __export_items: >-
+          {{ __export_items | default([]) + (__result.resources | default([])
+          | map('combine', {'__project_name': __result.__project}) | list) }}
+      loop: "{{ __workflows.results }}"
+      loop_control:
+        loop_var: __result
+        label: "{{ __result.__project }}"
+
+    - name: Ensure export directories exist
+      ansible.builtin.file:
+        path: "{{ __export_dir }}/{{ __project_name | regex_replace('[^A-Za-z0-9._-]', '_') }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ __export_items | default([]) | map(attribute='__project_name') | unique | list }}"
+      loop_control:
+        loop_var: __project_name
+
+    - name: Write workflow definitions
+      ansible.builtin.copy:
+        dest: >-
+          {{ __export_dir }}/{{ item.__project_name | regex_replace('[^A-Za-z0-9._-]', '_') }}/{{
+          item.name | regex_replace('[^A-Za-z0-9._-]', '_') }}.json
+        content: "{{ item.workflow_definition | to_nice_json(indent=2) }}\n"
+        mode: "0644"
+      loop: "{{ __export_items | default([]) | selectattr('workflow_definition', 'defined') | list }}"
+      loop_control:
+        label: "{{ item.__project_name }}/{{ item.name }}"
+      register: __written
+
+    - name: Summarize exported files
+      ansible.builtin.debug:
+        msg: "{{ __written.results | default([]) | map(attribute='dest') | list }}"
+...

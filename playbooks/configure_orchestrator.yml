@@ -1,0 +1,29 @@
+---
+# Configure Automation Orchestrator from a directory of YAML variable files.
+#
+# Usage:
+#   ansible-playbook kenmoini.automation_orchestrator_config.configure_orchestrator \
+#     -e orchestrator_configs_dir=./my_configs
+#
+# Every .yml/.yaml file in the configs directory (default: ./orchestrator_configs,
+# relative to the current working directory) is loaded as variables, then the
+# dispatch role runs every configuration role against the loaded data.
+#
+# Authentication variables (set in the configs directory, inventory or via -e):
+#   orchestrator_hostname, orchestrator_username, orchestrator_password,
+#   orchestrator_token, orchestrator_client_id, orchestrator_client_secret,
+#   orchestrator_validate_certs, orchestrator_request_timeout
+- name: Configure Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  pre_tasks:
+    - name: Include configuration variables from the configs directory
+      ansible.builtin.include_vars:
+        dir: "{{ orchestrator_configs_dir | default('orchestrator_configs') }}"
+        extensions: [yml, yaml]
+        ignore_files: [auth.yml.example]
+      tags: always
+  roles:
+    - role: kenmoini.automation_orchestrator_config.dispatch
+...

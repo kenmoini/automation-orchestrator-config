@@ -1,0 +1,38 @@
+---
+# Obtain an Automation Orchestrator access token.
+#
+# Usage:
+#   ansible-playbook kenmoini.automation_orchestrator_config.get_token \
+#     -e orchestrator_hostname=orchestrator.example.com \
+#     -e orchestrator_client_id=... -e orchestrator_client_secret=...
+#
+# The token is stored in the fact `orchestrator_token` for the rest of the play.
+# To reuse it, either pass it to later runs with `-e orchestrator_token=...`, or
+# `import_playbook: kenmoini.automation_orchestrator_config.get_token` ahead of
+# a play that uses the collection roles (the fact is picked up by the roles).
+- name: Obtain an Automation Orchestrator access token
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Request an access token
+      kenmoini.automation_orchestrator_config.token:
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      register: __token
+      no_log: true
+
+    - name: Store the access token as a fact
+      ansible.builtin.set_fact:
+        orchestrator_token: "{{ __token.access_token }}"
+      no_log: true
+
+    - name: Report token expiry
+      ansible.builtin.debug:
+        msg: "Token obtained; expires in {{ __token.expires_in }} seconds"
+...
