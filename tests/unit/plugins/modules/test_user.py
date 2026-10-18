@@ -284,3 +284,15 @@ def test_user_exists_missing_without_password_fails(fake_api):
     with pytest.raises(AnsibleFailJson) as exc:
         run_module(user_module.main, {"username": "alice", "state": "exists"}, fake_api)
     assert "password is required" in exc.value.args[0]["msg"]
+
+
+def test_user_groups_follow_pagination(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": [_member(G_OPS, "ops")], "next": None}, query={"cursor": "c2"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": [_member(G_USERS, "users")], "next": "c2"})
+    result = run_module(user_module.main, {"username": "alice", "groups": [G_OPS, G_USERS]}, fake_api)
+    assert result["changed"] is False
+    assert result["groups"] == ["ops", "users"]
+    assert not _by_method(fake_api, "PUT")
+    pages = [c for c in fake_api.calls if c["path"] == LIST + "/u1/groups"]
+    assert [c["query"].get("cursor") for c in pages] == [None, "c2"]

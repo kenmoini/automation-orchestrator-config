@@ -201,11 +201,7 @@ def _group_names_for_create(module, values):
 def _reconcile_groups(module, user, values):
     """Make the manual group memberships of ``user`` match ``values``; return (changed, group names)."""
     context = "Failed to update groups of user '{0}'".format(user.get("username"))
-    try:
-        body = module.request("GET", "/users/{0}/groups".format(user["id"]))
-    except OrchestratorAPIError as err:
-        module.fail_api(err, context)
-    current = (body or {}).get("resources") or []
+    current = module.get_all("/users/{0}/groups".format(user["id"]), context=context)
     current_names = dict((g["id"], g.get("name")) for g in current)
     target = {}
     for value in values:

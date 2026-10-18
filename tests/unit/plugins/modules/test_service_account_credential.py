@@ -206,3 +206,15 @@ def test_service_account_name_resolved_with_project(fake_api):
     fake_api.add("GET", CREDS, 200, _creds(_cred()))
     result = run_module(cred_module.main, {"service_account": "ci", "project": PID}, fake_api)
     assert result["changed"] is False
+
+
+def test_credential_listing_follows_pagination(fake_api):
+    page2 = dict(_creds(_cred()), next=None)
+    page1 = dict(_creds(_cred(id="c0", identifier="cid-0", status="disabled")), next="c2")
+    fake_api.add("GET", CREDS, 200, page2, query={"cursor": "c2"})
+    fake_api.add("GET", CREDS, 200, page1)
+    result = run_module(cred_module.main, dict(BASE, identifier="cid-1"), fake_api)
+    assert result["changed"] is False
+    assert result["service_account_credential"]["id"] == "c1"
+    assert _writes(fake_api) == []
+    assert [c["query"].get("cursor") for c in fake_api.calls] == [None, "c2"]

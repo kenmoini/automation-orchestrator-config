@@ -201,8 +201,7 @@ def main():
         except OrchestratorAPIError as err:
             module.fail_api(err, "Failed to {0} credential for service account '{1}'".format(verb, sa_label))
 
-    listing = api("list", "GET", base)
-    credentials = list((listing or {}).get("resources") or [])
+    credentials = module.get_all(base, context="Failed to list credential for service account '{0}'".format(sa_label))
     current = None
     if identifier:
         for item in credentials:
