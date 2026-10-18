@@ -1,6 +1,0 @@
----
-minor_changes:
-  - group - new module that creates, updates, renames and deletes groups.
-  - group_info - new module that lists groups, optionally by name.
-  - user - new module that creates, updates, renames and deletes local users and manages their group memberships.
-  - user_info - new module that lists users with optional username, name, auth type and auth source filters.

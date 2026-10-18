@@ -1,5 +1,0 @@
----
-minor_changes:
-  - identity_provider - new module that manages OIDC identity providers, resolves group names in group mappings, keeps the client secret out of results and can test the configuration.
-  - identity_provider_info - new module that lists identity providers, optionally by name.
-...

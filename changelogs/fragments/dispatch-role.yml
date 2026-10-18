@@ -1,4 +1,0 @@
----
-minor_changes:
-  - dispatch - new meta role that runs every other role in the collection in dependency order, with tags per role, an exclude list and optional merging of wildcard variables.
-...

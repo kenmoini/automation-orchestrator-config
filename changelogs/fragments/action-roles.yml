@@ -1,5 +1,0 @@
----
-minor_changes:
-  - orchestrator_execution_launch - new role that launches workflow executions with the execution module.
-  - orchestrator_approval_decisions - new role that approves or rejects pending approval requests with the approval module.
-...

@@ -1,7 +1,0 @@
----
-minor_changes:
-  - policy - new module that creates, updates, renames and deletes system and project policies.
-  - policy_info - new module that lists policies with optional name, project, built-in and scope filters.
-  - role - new module that creates, updates, renames and deletes system and project roles.
-  - role_info - new module that lists roles with optional name, project, built-in, scope and policy filters.
-...

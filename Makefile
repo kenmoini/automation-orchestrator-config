@@ -26,7 +26,7 @@ link:
 # so test targets run against a synced copy instead of the symlink.
 sync:
 	mkdir -p $(SYNC_DIR) .ansible/tmp
-	rsync -a --delete --exclude .git --exclude .venv --exclude build --exclude .ansible --exclude .superpowers --exclude tests/output ./ $(SYNC_DIR)/
+	rsync -a --delete --exclude .git --exclude __pycache__ --exclude .venv --exclude build --exclude .ansible --exclude .superpowers --exclude tests/output ./ $(SYNC_DIR)/
 
 lint:
 	mkdir -p .ansible/tmp

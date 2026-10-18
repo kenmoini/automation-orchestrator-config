@@ -1,4 +1,106 @@
-kenmoini.automation_orchestrator_config Release Notes
-=====================================================
+=======================================================
+kenmoini.automation\_orchestrator\_config Release Notes
+=======================================================
 
 .. contents:: Topics
+
+v0.1.0
+======
+
+Release Summary
+---------------
+
+Initial release of kenmoini.automation_orchestrator_config, configuration as code for Red Hat Automation Orchestrator (tech preview, API 1.3.1). It ships 33 modules covering projects, workflows, credentials, users, groups, roles, policies, identity providers, integrations, service accounts, settings, executions and approvals, 18 roles including a dispatch role that applies them in dependency order, and the configure_orchestrator, export_workflows and get_token playbooks. See docs/API_COMPATIBILITY.md for behaviors still to be confirmed against a live instance.
+
+Minor Changes
+-------------
+
+- api - new module that calls any Automation Orchestrator API endpoint and returns the HTTP status and JSON body.
+- approval - new module that approves or rejects a pending approval request found by id or by execution and name.
+- approval_info - new module that reads approval requests with server-side execution and status filters, optionally scoped to a project.
+- collect_async_status role - new internal role that waits for async tasks, collects errors and registers results for the resource roles.
+- credential - new module that creates, updates, renames and deletes project credentials without ever reading or logging secret inputs.
+- credential_info - new module that lists the credentials of a project with optional name, credential type and enabled filters.
+- credential_type_info - new module that lists credential types, with their input and injector schemas, optionally by name.
+- dispatch - new meta role that runs every other role in the collection in dependency order, with tags per role, an exclude list and optional merging of wildcard variables.
+- execution - new module that launches a workflow execution, auto-picking the sole trigger, and can wait for it with interval and timeout.
+- execution_cancel - new module that cancels a pending, running or paused execution.
+- execution_info - new module that reads one execution or scans the most recent executions with client-side workflow and status filters.
+- global_vars role - new internal role that provides the shared variables, such as the state to operation translation, used by every role.
+- group - new module that creates, updates, renames and deletes groups.
+- group_info - new module that lists groups, optionally by name.
+- identity_provider - new module that manages OIDC identity providers, resolves group names in group mappings, keeps the client secret out of results and can test the configuration.
+- identity_provider_info - new module that lists identity providers, optionally by name.
+- integration - new module that creates, updates, renames and deletes integrations, assigns them to projects, toggles their models and tools, and can discover, refresh and validate them.
+- integration_info - new module that lists integrations with optional name, type, enabled, scope and project filters, optionally with their models and tools.
+- orchestrator_approval_decisions - new role that approves or rejects pending approval requests with the approval module.
+- orchestrator_credentials role - new role that manages project credentials from a list without re-sending unchanged secrets.
+- orchestrator_execution_launch - new role that launches workflow executions with the execution module.
+- orchestrator_groups role - new role that creates, renames and deletes groups from a list.
+- orchestrator_identity_providers role - new role that manages identity providers from a list, with secret-safe client secret handling.
+- orchestrator_integrations role - new role that manages MCP server, LLM provider and automation platform integrations from a list.
+- orchestrator_policies role - new role that manages access policies and their statements from a list.
+- orchestrator_projects role - new role that creates, updates and deletes projects from a list; it is the reference implementation for the other resource roles.
+- orchestrator_role_assignments role - new role that assigns roles to users and groups from a list.
+- orchestrator_roles role - new role that manages roles and the policies they grant from a list.
+- orchestrator_service_account_credentials role - new role that creates, rotates, enables, disables and deletes service account credentials.
+- orchestrator_service_accounts role - new role that manages service accounts, including enabling and disabling them, from a list.
+- orchestrator_settings role - new role that applies Orchestrator settings from a dictionary with one call or from a list of items.
+- orchestrator_users role - new role that manages users, their passwords and group memberships from a list.
+- orchestrator_workflows role - new role that manages workflows from inline or controller-side file definitions and publishes them.
+- playbooks - add configure_orchestrator, export_workflows and get_token playbooks.
+- policy - new module that creates, updates, renames and deletes system and project policies.
+- policy_info - new module that lists policies with optional name, project, built-in and scope filters.
+- project - new module that creates, updates, renames and deletes projects.
+- project_info - new module that lists projects with optional name, default and built-in filters.
+- role - new module that creates, updates, renames and deletes system and project roles.
+- role_assignment - new module that grants and revokes roles for users and groups, globally or within a project.
+- role_assignment_info - new module that lists role assignments with optional role, user, group, project, scope and principal type filters.
+- role_info - new module that lists roles with optional name, project, built-in, scope and policy filters.
+- service_account - new module that manages service accounts, including enabling and disabling them.
+- service_account_credential - new module that creates, rotates, enables, disables and deletes service account client credentials and returns the one-time client secret.
+- service_account_info - new module that lists service accounts, optionally with credential metadata.
+- setting - new module that changes one or several runtime settings, writing only the values that differ.
+- setting_info - new module that lists runtime settings or settings categories.
+- token - new module that logs in with a username/password or client credentials and returns an access token.
+- user - new module that creates, updates, renames and deletes local users and manages their group memberships.
+- user_info - new module that lists users with optional username, name, auth type and auth source filters.
+- workflow - new module that creates, updates, renames and deletes workflows from inline or file-based definitions, creates a new version only when the definition changes, and can publish or unpublish them.
+- workflow_info - new module that lists the workflows of a project or gets one by ID, optionally with the current or a given version's definition and the version history.
+
+New Modules
+-----------
+
+- kenmoini.automation_orchestrator_config.api - Call any Automation Orchestrator API endpoint
+- kenmoini.automation_orchestrator_config.approval - Approve or reject a pending approval request on the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.approval_info - Gather information about approval requests on the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.credential - Manage credentials in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.credential_info - Gather information about credentials in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.credential_type_info - Gather information about credential types in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.execution - Launch a workflow execution on the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.execution_cancel - Cancel a running workflow execution on the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.execution_info - Gather information about workflow executions on the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.group - Manage groups in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.group_info - Gather information about groups in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.identity_provider - Manage OIDC identity providers in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.identity_provider_info - Gather information about identity providers in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.integration - Manage integrations in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.integration_info - Gather information about integrations in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.policy - Manage policies in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.policy_info - Gather information about policies in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.project - Manage projects in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.project_info - Gather information about projects in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.role - Manage roles in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.role_assignment - Manage role assignments in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.role_assignment_info - Gather information about role assignments in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.role_info - Gather information about roles in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.service_account - Manage service accounts in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.service_account_credential - Manage the client credentials of a service account in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.service_account_info - Gather information about service accounts in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.setting - Manage runtime settings of the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.setting_info - Gather information about runtime settings of the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.token - Obtain an access token from the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.user - Manage local users in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.user_info - Gather information about users in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.workflow - Manage workflows in the Automation Orchestrator
+- kenmoini.automation_orchestrator_config.workflow_info - Gather information about workflows in the Automation Orchestrator

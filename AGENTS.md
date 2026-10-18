@@ -1,76 +1,94 @@
 # AGENTS.md — kenmoini.automation_orchestrator_config
 
-## Project Overview
+## Context
 
-Ansible Collection for configuration-as-code of Red Hat Automation Orchestrator. It ships Python modules (one per API resource) and roles modeled on `redhat-cop/infra.aap_configuration`.
+This repository is an Ansible Collection (`kenmoini.automation_orchestrator_config`) that provides modules and roles for managing Red Hat Automation Orchestrator (tech preview, API 1.3.1) resources as code. See `CLAUDE.md` for the layout and `docs/ROLE_TEMPLATE.md` for the role contract.
 
-- **Collection FQCN:** `kenmoini.automation_orchestrator_config`
-- **License:** GPL-3.0-or-later
-- **Minimum Ansible version:** 2.16.0
-- **No collection dependencies** in `galaxy.yml`
+## Code Review Guidelines
 
-## Repository Structure
+When reviewing pull requests to this collection, verify the following:
 
-```text
-├── galaxy.yml                  # Collection metadata
-├── meta/runtime.yml            # requires_ansible, action_groups (orchestrator)
-├── plugins/
-│   ├── module_utils/           # orchestrator_api.py: OrchestratorModule base class
-│   ├── modules/                # One short-named module per resource, *_info modules, api
-│   └── doc_fragments/          # Shared documentation fragments
-├── roles/                      # orchestrator_<resource> roles plus global_vars, collect_async_status, dispatch
-├── tests/unit/                 # pytest unit tests (requirements.txt)
-├── changelogs/                 # antsibull-changelog (fragments/)
-└── docs/                       # STANDARDS.md, api/ snapshot, superpowers/ specs and plans
-```
+### Module Compliance
 
-## Plugins
+- Modules subclass `OrchestratorModule` and use the shared auth doc fragment; a new module is listed in the `orchestrator` action group in `meta/runtime.yml`.
+- Resource modules use `find_existing`, then `delete_if_needed` or `create_or_update`, and end with `exit_result`; `_info` modules end with `exit_info`.
+- Write-only values are declared in `secret_fields`, honor `update_secrets`, and never appear in return values or logs. Nested configs the API needs whole use `full_fields`.
+- Check mode must not change anything; one-shot actions are skipped in check mode.
+- `DOCUMENTATION`, `EXAMPLES` and `RETURN` are complete, with `version_added` set; the Python header and `black`/`flake8` (line length 160) rules are followed.
+- New modules have unit tests in `tests/unit/plugins/modules/` with mocked HTTP covering create, update, no-change, delete and check mode.
 
-- All modules subclass the single `OrchestratorModule` base class in `plugins/module_utils/orchestrator_api.py`.
-- Auth parameters: `orchestrator_host`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, plus `validate_certs` and `request_timeout`. Each has an `ORCHESTRATOR_*` environment fallback.
-- Precedence: token, then client credentials, then username/password.
-- Modules use short names (`project`, `group`, `workflow`), `_info` variants for reads, and an `api` module as an escape hatch. All are listed in the `orchestrator` action group in `meta/runtime.yml`; keep it in sync when adding a module.
-- Module docs come from `DOCUMENTATION`/`EXAMPLES`/`RETURN` plus shared doc fragments.
+### Role Structure Compliance
 
-## Roles
-
-- Resource roles are named `orchestrator_<resource>` and take a list variable of the same name, `orchestrator_<resource>`.
-- Global knobs use the `orchestrator_configuration_*` prefix; per-role overrides use `<role_name>_*`.
-- Default state variable: `orchestrator_state` (items may override with `state`).
-- Auth variables: `orchestrator_hostname`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, `orchestrator_validate_certs`, `orchestrator_request_timeout`.
-- Helper roles: `global_vars` (shared vars such as `operation_translate`), `collect_async_status` (waits for and gathers async job results), `dispatch` (runs all resource roles in dependency order).
-- Each role has `defaults/main.yml`, `tasks/main.yml`, `meta/main.yml`, `meta/argument_specs.yml`, `README.md`.
-- Internal loop variables are double-underscore prefixed: `__orchestrator_<resource>_item`.
+- New roles follow `docs/ROLE_TEMPLATE.md`: `defaults/main.yml`, `tasks/main.yml`, `meta/main.yml`, `meta/argument_specs.yml`, `README.md`, `tests/test.yml` and `tests/configs/`.
+- `meta/main.yml` declares the dependency on `global_vars`.
+- `defaults/main.yml` initializes the resource list to `[]` and includes the standard variables for secure logging, async retries, async delay, loop delay, enforce defaults and `orchestrator_configuration_async_dir`.
+- Role names use the `orchestrator_` prefix.
+- The identifying key (not always `name`) is used in the module task, loop label and README, and is captured by `collect_async_status`.
 
 ### Async Task Pattern
 
-1. Loop over the resource list with `async` and `poll: 0`.
-2. Register the async job results.
-3. Include `collect_async_status` to wait and gather results.
-4. An `always` block cleans up async result files.
-5. Check mode uses `ansible_check_mode | ternary(0, 1000)` for the async value.
+All resource roles must follow the async block pattern:
 
-## Coding Standards
+1. A block with `ansible_async_dir` and `no_log` set
+2. The module task loops over the resource list with `async` and `poll: 0`
+3. A "Flag for errors (check mode only)" task using `ansible.builtin.set_fact` to set `error_flag`
+4. An `include_role` of `kenmoini.automation_orchestrator_config.collect_async_status` to wait for results, passing `cas_async_delay`, `cas_async_retries`, `cas_secure_logging`, `cas_job_async_results_item`, `cas_register_subvar`, `cas_error_list_var_name`, and `cas_object_label`
+5. An `always` block that cleans up async result files via `ansible.builtin.async_status` with `mode: cleanup`
 
-See `docs/STANDARDS.md`.
+### Variable Naming
 
-- YAML files use `.yml`, 2-space indent, start with `---` and end with `...`.
-- Spaces around Jinja variables: `{{ var }}`.
-- Underscores in names; variable pattern `^[a-z_][a-z0-9_]*$`; task names prefixed `"{stem} | "`.
-- `ansible-lint` profile `production`.
-- Python: `black` and `flake8` (line length 160). Non-empty Python files start with the standard header (coding line, copyright, GPL line, SPDX line, then `from __future__ import absolute_import, division, print_function` and `__metaclass__ = type`). `__init__.py` files stay empty.
-- Markdown: `markdownlint-cli2`, ATX headings, fenced code blocks.
+- Internal loop variables use double-underscore prefix: `__orchestrator_<res>_item`
+- Async result variables follow: `__orchestrator_<res>_job_async` and `__orchestrator_<res>_job_async_results_item`
+- Variable names must match pattern `^[a-z_][a-z0-9_]*$`
+- Loop variable prefix must match `^(__|{role}_)`
 
-## Dev Commands
+### Task Naming
 
-`make venv`, `make lint`, `make sanity`, `make unit`, `make build` (the Makefile arrives in a later task).
-`make pytest` runs the unit tests with plain pytest on the synced copy (use it where ansible-test cannot run, e.g. sandboxes).
+- Task names must follow the `"{stem} | "` prefix pattern enforced by ansible-lint
+- Example: `"Managing Projects"` for the projects role task
 
-## Changelogs
+### Authentication Parameters
 
-`antsibull-changelog` with fragments in `changelogs/fragments/`. Every user-visible change needs a fragment.
+- Modules take `orchestrator_host`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, `validate_certs`, `request_timeout`
+- Roles pass `orchestrator_hostname`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, `orchestrator_validate_certs`, `orchestrator_request_timeout` with `default(omit, true)` fallbacks
+- Precedence is token, client credentials, username/password
 
-## Notes
+### Dispatch Integration
 
-- Never commit credentials; `tests/auth.yml` is gitignored.
-- Live lab spot-checks use `ORCHESTRATOR_*` env vars and objects named `aoc-test-*` only.
+- New roles must be added to the dispatcher list in `roles/dispatch/defaults/main.yml`, in dependency order
+- The entry must specify `role`, `var`, and `tags` at minimum, and the dispatch README table must be updated
+
+### Documentation
+
+- Role `README.md` must include: description, variable table (with defaults, required flag, description, example), data structure documentation with YAML examples, and a license link
+- `meta/argument_specs.yml` must fully describe all role options with types and defaults
+- New roles and modules appear in the tables of the top-level `README.md`
+- Behavior that depends on an unconfirmed API assumption is recorded in `docs/API_COMPATIBILITY.md`
+
+### Changelog
+
+- Every feature or bugfix PR must include a changelog fragment in `changelogs/fragments/`
+- Fragment file must be valid YAML with `...` document end marker
+- Use appropriate category: `minor_changes`, `major_changes`, `bugfixes`, `breaking_changes`, etc.
+
+### Testing
+
+- Unit tests cover new module behavior; `make pytest` and `make lint` pass, and CI runs `ansible-test sanity` and `units`
+- New roles include test data in `roles/<role>/tests/configs/` and a `test.yml` playbook, plus an entry in `tests/configs/` and the live harness when applicable
+- Live test objects are named `aoc-test-*`; `tests/auth.yml` and any credentials are never committed
+
+### Linting Standards
+
+- YAML files must use `.yml` extension
+- YAML files must end with `...` (document-end marker)
+- 2-space indentation, no trailing whitespace
+- Jinja2 variables must have spaces: `{{ var }}` not `{{var}}`
+- ansible-lint profile: `production`
+- Python code: `black` formatting (line length 160), `flake8` compliance
+
+## PR Submission
+
+When submitting PRs:
+
+1. Run `make lint` (pre-commit) and `make pytest` before pushing
+2. Include a changelog fragment

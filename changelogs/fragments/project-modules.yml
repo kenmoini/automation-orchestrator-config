@@ -1,5 +1,0 @@
----
-minor_changes:
-  - project - new module that creates, updates, renames and deletes projects.
-  - project_info - new module that lists projects with optional name, default and built-in filters.
-...

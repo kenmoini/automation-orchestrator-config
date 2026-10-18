@@ -1,5 +1,0 @@
----
-minor_changes:
-  - token - new module that logs in with a username/password or client credentials and returns an access token.
-  - api - new module that calls any Automation Orchestrator API endpoint and returns the HTTP status and JSON body.
-...

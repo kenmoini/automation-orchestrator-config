@@ -1,6 +1,0 @@
----
-minor_changes:
-  - execution - new module that launches a workflow execution, auto-picking the sole trigger, and can wait for it with interval and timeout.
-  - execution_cancel - new module that cancels a pending, running or paused execution.
-  - execution_info - new module that reads one execution or scans the most recent executions with client-side workflow and status filters.
-...

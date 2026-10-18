@@ -1,4 +1,0 @@
----
-minor_changes:
-  - playbooks - add configure_orchestrator, export_workflows and get_token playbooks.
-...
