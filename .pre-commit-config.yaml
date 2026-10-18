@@ -6,11 +6,6 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.23.3
-    hooks:
-      - id: markdownlint-cli2
-
   - repo: https://github.com/psf/black
     rev: 26.5.1
     hooks:
@@ -30,6 +25,12 @@ repos:
 
   - repo: local
     hooks:
+      # Local system hook: pre-commit's own node env install breaks on npm >= 11 (EALLOWGIT)
+      - id: markdownlint-cli2
+        name: markdownlint-cli2
+        entry: npx --yes markdownlint-cli2@0.23.3
+        language: system
+        types: [markdown]
       - id: ansible-lint
         name: ansible-lint
         entry: .venv/bin/ansible-lint
