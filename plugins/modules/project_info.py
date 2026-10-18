@@ -90,7 +90,7 @@ def main():
     resources = module.get_all("/projects", query)
     if params["name"] is not None:
         resources = [r for r in resources if r.get("name") == params["name"]]
-    module.exit_json(changed=False, resources=resources)
+    module.exit_info(resources)
 
 
 if __name__ == "__main__":

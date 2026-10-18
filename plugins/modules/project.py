@@ -32,8 +32,9 @@ options:
     required: true
   new_name:
     description:
-      - Rename the existing project called O(name) to this name.
-      - Only used when O(state=present) and the project exists. When the project does not exist it is created with O(name) and this option is ignored.
+      - Rename the project called O(name) to this name. Only used when O(state=present).
+      - The module is idempotent. When no project is called O(name) but one is called O(new_name), that project is used as is, so a rerun makes no change.
+      - When neither project exists, the project is created with O(new_name).
     type: str
   description:
     description: Description of the project.
@@ -45,7 +46,7 @@ options:
     description:
       - V(present) creates the project or updates it to match the options.
       - V(exists) creates the project when it is missing and never modifies an existing one.
-      - V(absent) deletes the project. The built-in default project cannot be deleted.
+      - V(absent) deletes the project. Deletion is permanent. The built-in default project cannot be deleted.
     type: str
     choices: [present, absent, exists]
     default: present
@@ -139,7 +140,10 @@ def main():
     module.result_key = "project"
     params = module.params
 
-    existing = module.get_one_by_name("/projects", params["name"])
+    if params["state"] == "present":
+        existing = module.find_existing("/projects", params["name"], params["new_name"])
+    else:
+        existing = module.get_one_by_name("/projects", params["name"])
 
     if params["state"] == "absent":
         changed = module.delete_if_needed(existing, "/projects")
@@ -148,9 +152,7 @@ def main():
     if params["state"] == "exists" and existing is not None:
         module.exit_result(False, existing)
 
-    name = params["name"]
-    if params["state"] == "present" and existing is not None and params["new_name"]:
-        name = params["new_name"]
+    name = params["new_name"] if params["state"] == "present" and params["new_name"] else params["name"]
     desired = module.build_desired({"name": name, "description": params["description"], "labels": params["labels"]})
     changed, obj = module.create_or_update(existing, desired, "/projects")
     module.exit_result(changed, obj)

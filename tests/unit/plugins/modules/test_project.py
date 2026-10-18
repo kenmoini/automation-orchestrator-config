@@ -80,12 +80,36 @@ def test_rename_with_new_name_patches_name(fake_api):
     assert patch["body"] == {"name": "renamed"}
 
 
-def test_new_name_ignored_when_creating(fake_api):
+def test_rename_rerun_is_idempotent(fake_api):
     fake_api.add("GET", LIST, 200, {"resources": [], "next": None}, query={"name": "demo"})
-    fake_api.add("POST", LIST, 201, _project())
+    fake_api.add("GET", LIST, 200, {"resources": [_project(name="renamed")], "next": None}, query={"name": "renamed"})
+    result = run_module(project_module.main, {"name": "demo", "new_name": "renamed", "description": "old"}, fake_api)
+    assert result["changed"] is False
+    assert result["project"]["name"] == "renamed"
+    assert [c["method"] for c in fake_api.calls] == ["GET", "GET"]
+
+
+def test_create_uses_new_name_when_neither_exists(fake_api):
+    fake_api.add("GET", LIST, 200, {"resources": [], "next": None})
+    fake_api.add("POST", LIST, 201, _project(name="renamed"))
     run_module(project_module.main, {"name": "demo", "new_name": "renamed"}, fake_api)
     post = [c for c in fake_api.calls if c["method"] == "POST"][0]
-    assert post["body"] == {"name": "demo"}
+    assert post["body"] == {"name": "renamed"}
+
+
+def test_update_labels_changed_patches_labels(fake_api):
+    fake_api.add("GET", LIST, 200, {"resources": [_project(labels={"env": "dev"})], "next": None}, query={"name": "demo"})
+    fake_api.add("PATCH", LIST + "/p1", 200, _project(labels={"env": "prod"}))
+    run_module(project_module.main, {"name": "demo", "labels": {"env": "prod"}}, fake_api)
+    patch = [c for c in fake_api.calls if c["method"] == "PATCH"][0]
+    assert patch["body"] == {"labels": {"env": "prod"}}
+
+
+def test_diff_mode_reports_patched_keys_only(fake_api):
+    fake_api.add("GET", LIST, 200, {"resources": [_project()], "next": None}, query={"name": "demo"})
+    fake_api.add("PATCH", LIST + "/p1", 200, _project(description="new"))
+    result = run_module(project_module.main, {"name": "demo", "description": "new", "_ansible_diff": True}, fake_api)
+    assert result["diff"] == {"before": {"description": "old"}, "after": {"description": "new"}}
 
 
 def test_exists_state_creates_but_never_updates(fake_api):

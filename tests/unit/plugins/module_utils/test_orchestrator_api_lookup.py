@@ -130,3 +130,16 @@ def test_unscoped_role_lookup_prefers_system_scope(fake_api, kind, path):
     assert "project_id" not in fake_api.calls[-1]["query"]
     assert module.resolve_id(kind, "admin", project_id=PID) == UID
     assert fake_api.calls[-1]["query"]["project_id"] == PID
+
+
+def test_find_existing_prefers_name_then_new_name_then_none(fake_api):
+    fake_api.add("GET", "/api/v1/projects", 200, page([{"id": "o", "name": "old"}]), query={"name": "old"})
+    fake_api.add("GET", "/api/v1/projects", 200, page([]), query={"name": "gone"})
+    fake_api.add("GET", "/api/v1/projects", 200, page([{"id": "n", "name": "new"}]), query={"name": "new"})
+    fake_api.add("GET", "/api/v1/projects", 200, page([]), query={"name": "nothing"})
+    module = make_module(fake_api)
+
+    assert module.find_existing("/projects", "old", "new")["id"] == "o"
+    assert module.find_existing("/projects", "gone", "new")["id"] == "n"
+    assert module.find_existing("/projects", "gone", "nothing") is None
+    assert module.find_existing("/projects", "gone") is None

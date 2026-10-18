@@ -37,3 +37,10 @@ def test_info_filters_passed_as_query(fake_api):
     query = fake_api.calls[0]["query"]
     assert query["is_default"] == "true"
     assert query["is_builtin"] == "false"
+
+
+def test_info_strips_secrets(fake_api):
+    fake_api.add("GET", LIST, 200, {"resources": [{"id": "p1", "name": "a", "inputs": {"k": "v"}, "password": "x"}], "next": None})
+    result = run_module(info_module.main, {}, fake_api)
+    assert result["resources"][0]["inputs"] == "$encrypted$"
+    assert result["resources"][0]["password"] == "$encrypted$"

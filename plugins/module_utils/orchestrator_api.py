@@ -404,6 +404,17 @@ class OrchestratorModule(AnsibleModule):
         """
         return self._find_by_name(path, name, name_field=name_field, query=query, label=label)
 
+    def find_existing(self, path, name, new_name=None, **lookup_kwargs):
+        """Return the object called ``name``; when absent and ``new_name`` is given, the object called ``new_name``.
+
+        This keeps renames idempotent: after ``name`` was renamed to ``new_name`` a rerun finds the renamed object.
+        ``lookup_kwargs`` (``query``, ``label``, ``name_field``) are passed to ``get_one_by_name``.
+        """
+        existing = self.get_one_by_name(path, name, **lookup_kwargs)
+        if existing is None and new_name:
+            existing = self.get_one_by_name(path, new_name, **lookup_kwargs)
+        return existing
+
     def _find_by_name(self, path, name, name_field="name", query=None, label=None, predicate=None):
         query = dict(query or {})
         filter_param = SERVER_NAME_FILTERS.get(path)
@@ -604,6 +615,11 @@ class OrchestratorModule(AnsibleModule):
                 return False
             self.fail_api(err, "Failed to delete {0} '{1}'".format(label, _display_name(existing)))
         return True
+
+    def exit_info(self, resources, secret_fields=()):
+        """Exit an ``_info`` module with ``changed=False`` and ``resources`` with secrets stripped."""
+        mask = tuple(DEFAULT_SECRET_FIELDS) + tuple(secret_fields)
+        self.exit_json(changed=False, resources=[strip_secrets(r, mask) for r in resources])
 
     def exit_result(self, changed, obj=None, **extra):
         """Exit with ``changed``, ``id`` and the secret-masked ``obj`` under ``self.result_key``.
