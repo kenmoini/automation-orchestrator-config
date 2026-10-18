@@ -58,6 +58,7 @@
     - name: Include test configuration variables
       ansible.builtin.include_vars:
         dir: "{{ orchestrator_configs_dir }}"
+        depth: 1
         extensions: [yml]
       tags: always
 

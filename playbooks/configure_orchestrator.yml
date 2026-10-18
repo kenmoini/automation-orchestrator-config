@@ -5,7 +5,8 @@
 #   ansible-playbook kenmoini.automation_orchestrator_config.configure_orchestrator \
 #     -e orchestrator_configs_dir=./my_configs
 #
-# Every .yml/.yaml file in the configs directory is loaded as variables, then the
+# Every .yml/.yaml file directly inside the configs directory is loaded as variables (subdirectories such as
+# files/ are skipped so workflow definitions can live beside the variables), then the
 # dispatch role runs every configuration role against the loaded data.
 #
 # orchestrator_configs_dir defaults to ./orchestrator_configs. A relative value is
@@ -26,9 +27,15 @@
     __configs_dir_raw: "{{ orchestrator_configs_dir | default('orchestrator_configs', true) }}"
     __configs_dir: "{{ __configs_dir_raw if __configs_dir_raw is abs else lookup('ansible.builtin.env', 'PWD') ~ '/' ~ __configs_dir_raw }}"
   pre_tasks:
+    - name: Expose the resolved configs directory to the roles
+      ansible.builtin.set_fact:
+        orchestrator_configs_dir: "{{ __configs_dir }}"
+      tags: always
+
     - name: Include configuration variables from the configs directory
       ansible.builtin.include_vars:
         dir: "{{ __configs_dir }}"
+        depth: 1
         extensions: [yml, yaml]
         ignore_files: [auth.yml.example]
       tags: always
