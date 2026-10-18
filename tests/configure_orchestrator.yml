@@ -6,6 +6,8 @@
   connection: local
   gather_facts: false
   vars:
+    # Relative definition_file paths in tests/configs (files/aoc-test-wait.json) resolve against this directory.
+    orchestrator_configs_dir: "{{ playbook_dir }}/configs"
     orchestrator_configuration_collect_logs: true
   pre_tasks:
     - name: Include authentication variables from tests/auth.yml when present
@@ -48,7 +50,7 @@
 
     - name: Include test configuration variables
       ansible.builtin.include_vars:
-        dir: "{{ playbook_dir }}/configs"
+        dir: "{{ orchestrator_configs_dir }}"
         extensions: [yml]
       tags: always
   roles:

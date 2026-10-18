@@ -19,7 +19,7 @@ ansible-playbook kenmoini.automation_orchestrator_config.configure_orchestrator 
   -e orchestrator_configs_dir=./my_configs
 ```
 
-`orchestrator_configs_dir` defaults to `orchestrator_configs` (relative to the current directory). `auth.yml.example` is ignored.
+`orchestrator_configs_dir` defaults to `orchestrator_configs`. A relative value is resolved against the current working directory (where you run `ansible-playbook`), not the playbook directory inside the installed collection; an absolute value is used as-is. The roles resolve relative file paths in the configuration, such as a workflow `definition_file`, against the same directory. `auth.yml.example` is ignored.
 
 Layout: one YAML file per resource, each defining an `orchestrator_<resource>` list.
 

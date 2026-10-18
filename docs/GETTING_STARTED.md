@@ -39,8 +39,12 @@ orchestrator_configs/
 ├── groups.yml         # orchestrator_groups
 ├── users.yml          # orchestrator_users
 ├── credentials.yml    # orchestrator_credentials
-└── workflows.yml      # orchestrator_workflows
+├── workflows.yml      # orchestrator_workflows
+└── files/
+    └── demo-workflow.json  # workflow definition referenced by workflows.yml
 ```
+
+Every `.yml`/`.yaml` file under the directory (subdirectories included) is loaded as variables, so keep workflow definition files as `.json`.
 
 ### 2. Add authentication
 
@@ -139,12 +143,12 @@ orchestrator_workflows:
   - name: demo-workflow
     description: Demo workflow
     project: demo-project
-    definition_file: "{{ playbook_dir }}/files/demo-workflow.json"
+    definition_file: files/demo-workflow.json
     publish: true
 ...
 ```
 
-The `definition_file` is JSON or YAML, read on the controller. Alternatively set `workflow_definition` to an inline dictionary. The dispatch role applies the roles in dependency order (groups before identity providers and users, projects before credentials and workflows, service accounts before role assignments), so the file names do not matter.
+The `definition_file` is JSON or YAML, read on the controller. A relative path resolves against the configs directory (`orchestrator_configs_dir`), so this example reads `orchestrator_configs/files/demo-workflow.json`; an absolute path is used as-is. (`{{ playbook_dir }}` would point inside the installed collection, so do not use it here.) Alternatively set `workflow_definition` to an inline dictionary. The dispatch role applies the roles in dependency order (groups before identity providers and users, projects before credentials and workflows, service accounts before role assignments), so the file names do not matter.
 
 ## Understanding the dispatch role
 

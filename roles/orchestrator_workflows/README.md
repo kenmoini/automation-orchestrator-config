@@ -73,7 +73,7 @@ This also speeds up the overall role.
 
 ## Workflow Data Structure
 
-Provide the definition inline as `workflow_definition`, or point `definition_file` to a JSON or YAML file. The file is read on the controller by the role (JSON is valid YAML) and passed to the module as `workflow_definition`; `definition_file` itself is not passed to the module. Relative paths of `definition_file` resolve from the playbook directory. `workflow_definition` takes precedence when both are set.
+Provide the definition inline as `workflow_definition`, or point `definition_file` to a JSON or YAML file. The file is read on the controller by the role (JSON is valid YAML) and passed to the module as `workflow_definition`; `definition_file` itself is not passed to the module. Relative paths of `definition_file` resolve against `orchestrator_configs_dir` (anchored to the current working directory when it is itself relative), else against the current working directory; absolute paths are used as-is. `workflow_definition` takes precedence when both are set.
 
 ### Workflow Variables
 

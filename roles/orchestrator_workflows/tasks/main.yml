@@ -15,7 +15,7 @@
         project: "{{ __orchestrator_workflows_item.project | mandatory }}"
         workflow_definition: >-
           {{ __orchestrator_workflows_item.workflow_definition | default((lookup('ansible.builtin.file',
-          __orchestrator_workflows_item.definition_file) | from_yaml) if __orchestrator_workflows_item.definition_file is defined else omit)
+          __orchestrator_workflows_definition_path) | from_yaml) if __orchestrator_workflows_item.definition_file is defined else omit)
           }}
         is_import: "{{ __orchestrator_workflows_item.is_import | default(omit) }}"
         change_description: "{{ __orchestrator_workflows_item.change_description | default(omit, true) }}"
@@ -43,6 +43,15 @@
       changed_when: (__orchestrator_workflows_job_async.changed if ansible_check_mode else false)
       vars:
         __operation: "{{ operation_translate[__orchestrator_workflows_item.state | default(orchestrator_state) | default('present')] }}"
+        # A relative definition_file resolves against orchestrator_configs_dir (itself anchored to the current working directory
+        # when relative), else the current working directory. Absolute paths are used as-is.
+        __orchestrator_workflows_base_dir: "{{ orchestrator_configs_dir | default(lookup('ansible.builtin.env', 'PWD'), true) }}"
+        __orchestrator_workflows_base_abs: >-
+          {{ __orchestrator_workflows_base_dir if __orchestrator_workflows_base_dir is abs
+          else lookup('ansible.builtin.env', 'PWD') ~ '/' ~ __orchestrator_workflows_base_dir }}
+        __orchestrator_workflows_definition_path: >-
+          {{ __orchestrator_workflows_item.definition_file if __orchestrator_workflows_item.definition_file | default('') is abs
+          else __orchestrator_workflows_base_abs ~ '/' ~ __orchestrator_workflows_item.definition_file | default('') }}
 
     - name: Flag for errors (check mode only)
       ansible.builtin.set_fact:
