@@ -1,0 +1,5 @@
+ansible-core
+ansible-lint
+antsibull-changelog
+pre-commit
+yamllint

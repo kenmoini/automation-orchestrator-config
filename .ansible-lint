@@ -1,0 +1,33 @@
+---
+profile: production
+offline: true
+exclude_paths:
+  - .cache/
+  - .github/
+  - changelogs/
+  - build/
+  - .venv/
+  - .ansible/
+  - docs/
+  - tests/output/
+  - .superpowers/
+loop_var_prefix: "^(__|{role}_)"
+var_naming_pattern: "^[a-z_][a-z0-9_]*$"
+task_name_prefix: "{stem} | "
+use_default_rules: true
+enable_list:
+  - args
+  - role-argument-spec
+  - empty-string-compare
+  - no-same-owner
+  - name[prefix]
+  - galaxy-version-incorrect
+  - yaml
+skip_list:
+  - jinja[spacing]
+  - role-name[path]
+  - var-naming[no-role-prefix]
+warn_list:
+  - experimental
+  - no-log-password
+...

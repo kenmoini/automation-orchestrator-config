@@ -1,0 +1,57 @@
+---
+name: CI
+
+on: # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tooling
+        run: pip install -r .github/requirements.txt
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
+  sanity-units:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ansible: "2.16"
+            python: "3.11"
+          - ansible: "2.18"
+            python: "3.12"
+          - ansible: "2.20"
+            python: "3.13"
+    defaults:
+      run:
+        working-directory: ansible_collections/kenmoini/automation_orchestrator_config
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/kenmoini/automation_orchestrator_config
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install ansible-core and test deps
+        run: pip install "ansible-core~=${{ matrix.ansible }}.0" -r tests/unit/requirements.txt
+      - name: Sanity tests
+        run: ansible-test sanity --venv --python ${{ matrix.python }}
+      - name: Unit tests
+        run: |
+          if find tests/unit/plugins -name 'test_*.py' | grep -q .; then
+            ansible-test units --venv --python ${{ matrix.python }}
+          else
+            echo "no unit tests yet"
+          fi
+...

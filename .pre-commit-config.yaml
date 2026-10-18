@@ -1,0 +1,45 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+        name: black
+        entry: black
+        args: [--config=.black.cfg, --check, --diff]
+        types: [python]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.4.1
+    hooks:
+      - id: flake8
+        name: flake8
+        entry: flake8
+        types: [python]
+
+  - repo: local
+    hooks:
+      - id: ansible-lint
+        name: ansible-lint
+        entry: .venv/bin/ansible-lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: antsibull-changelog
+        name: antsibull-changelog lint
+        entry: .venv/bin/antsibull-changelog lint
+        language: system
+        pass_filenames: false
+        always_run: true
+...

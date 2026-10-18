@@ -1,0 +1,29 @@
+---
+extends: default
+
+ignore: |
+  changelogs
+  .venv
+  build
+  .ansible
+  .superpowers
+
+rules:
+  line-length:
+    max: 160
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  document-start: enable
+  document-end:
+    present: true
+  indentation:
+    level: error
+    indent-sequences: true
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  truthy:
+    level: error
+    allowed-values: ["true", "false"]
+...
