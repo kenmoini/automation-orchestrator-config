@@ -7,7 +7,10 @@ export ANSIBLE_COLLECTIONS_PATH := $(CURDIR)/build
 PY ?= 3.12
 COLL_DIR := build/ansible_collections/kenmoini/automation_orchestrator_config
 COVERAGE ?=
-SYNC_DIR := build/sync/ansible_collections/kenmoini/automation_orchestrator_config
+# Must be outside this repo's work tree: under the git-ignored build/ dir ansible-test walks up
+# to this repo's .git, lists no files at all and silently tests nothing.
+SYNC_ROOT ?= $(patsubst %/,%,$(or $(TMPDIR),/tmp))/kenmoini-aoc-sync
+SYNC_DIR := $(SYNC_ROOT)/ansible_collections/kenmoini/automation_orchestrator_config
 
 .PHONY: venv link sync lint sanity unit build install changelog live live-check live-cleanup
 
@@ -23,7 +26,7 @@ link:
 # so test targets run against a synced copy instead of the symlink.
 sync:
 	mkdir -p $(SYNC_DIR) .ansible/tmp
-	rsync -a --delete --exclude .git --exclude .venv --exclude build --exclude .ansible --exclude .superpowers ./ $(SYNC_DIR)/
+	rsync -a --delete --exclude .git --exclude .venv --exclude build --exclude .ansible --exclude .superpowers --exclude tests/output ./ $(SYNC_DIR)/
 
 lint:
 	mkdir -p .ansible/tmp
