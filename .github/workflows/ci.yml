@@ -16,10 +16,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install tooling
-        run: pip install -r .github/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Create venv and install tooling
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r .github/requirements.txt
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: .venv/bin/pre-commit run --all-files
 
   sanity-units:
     runs-on: ubuntu-latest

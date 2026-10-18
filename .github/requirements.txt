@@ -3,3 +3,4 @@ ansible-lint
 antsibull-changelog
 pre-commit
 yamllint
+pre-commit-uv
