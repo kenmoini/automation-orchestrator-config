@@ -78,13 +78,10 @@ from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_
 def main():
     argument_spec = dict()
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
-    module.result_key = "token"
 
     params = module.params
     if not (params.get("orchestrator_username") or params.get("orchestrator_client_id")):
-        module.fail_json(
-            msg="token module needs orchestrator_username/orchestrator_password or orchestrator_client_id/orchestrator_client_secret"
-        )
+        module.fail_json(msg="token module needs orchestrator_username/orchestrator_password or orchestrator_client_id/orchestrator_client_secret")
 
     access_token = module.authenticate()
     module.exit_json(changed=True, access_token=access_token, token_type="Bearer", expires_in=module._token_expires_in)

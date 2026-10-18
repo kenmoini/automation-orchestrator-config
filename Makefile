@@ -30,7 +30,8 @@ sync:
 
 lint:
 	mkdir -p .ansible/tmp
-	.venv/bin/pre-commit run --all-files
+	# --all-files only sees tracked files; include new untracked ones so they are linted before first commit
+	.venv/bin/pre-commit run --files $$(git ls-files --cached --others --exclude-standard)
 
 sanity: sync
 	cd $(SYNC_DIR) && $(CURDIR)/.venv/bin/ansible-test sanity --venv --python $(PY)

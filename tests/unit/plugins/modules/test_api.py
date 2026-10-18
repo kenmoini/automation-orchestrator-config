@@ -7,8 +7,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import pytest
+
 from ansible_collections.kenmoini.automation_orchestrator_config.plugins.modules import api as api_module
-from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import run_module
+from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import AnsibleFailJson, run_module
 
 
 def test_api_get_passes_query_and_returns_json(fake_api):
@@ -55,3 +57,12 @@ def test_api_expect_allows_other_status(fake_api):
     fake_api.add("GET", "/api/v1/things", 404, {"detail": "nope"})
     result = run_module(api_module.main, {"endpoint": "/things", "expect": [404]}, fake_api)
     assert result["status"] == 404
+
+
+def test_api_unexpected_status_fails_via_fail_api(fake_api):
+    fake_api.add("GET", "/api/v1/things", 404, {"title": "Not Found", "detail": "no such thing", "code": "not_found"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(api_module.main, {"endpoint": "/things"}, fake_api)
+    kwargs = exc.value.args[0]
+    assert kwargs["status"] == 404
+    assert kwargs["msg"].startswith("API request failed")

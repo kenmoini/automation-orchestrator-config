@@ -10,6 +10,7 @@ __metaclass__ = type
 
 import contextlib
 import json
+import os
 from unittest import mock
 from urllib.parse import parse_qsl, urlparse
 
@@ -167,6 +168,13 @@ def make_module(fake_api=None, argument_spec=None, supports_check_mode=False, **
     module.exit_json = lambda **kw: _exit_json(module, **kw)
     module.fail_json = lambda **kw: _fail_json(module, **kw)
     return module
+
+
+@pytest.fixture(autouse=True)
+def clean_orchestrator_env(monkeypatch):
+    """Drop every ORCHESTRATOR_* variable so a developer's shell cannot change auth behavior in tests."""
+    for name in [k for k in os.environ if k.startswith("ORCHESTRATOR_")]:
+        monkeypatch.delenv(name)
 
 
 @pytest.fixture

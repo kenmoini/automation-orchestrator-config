@@ -119,7 +119,6 @@ def main():
         return_all_pages=dict(type="bool", default=False),
     )
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
-    module.result_key = "json"
 
     params = module.params
     method = params["method"]
