@@ -1,0 +1,3 @@
+---
+orchestrator_configuration_execution_launch_secure_logging: "{{ orchestrator_configuration_secure_logging | default('false') }}"
+...

@@ -1,0 +1,3 @@
+---
+orchestrator_configuration_approval_decisions_secure_logging: "{{ orchestrator_configuration_secure_logging | default('false') }}"
+...

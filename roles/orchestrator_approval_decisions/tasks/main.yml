@@ -1,0 +1,30 @@
+---
+# Record Approval Decisions in Automation Orchestrator
+- name: Record Approval Decisions in Automation Orchestrator
+  kenmoini.automation_orchestrator_config.approval:
+    id: "{{ __orchestrator_approval_decisions_item.id | default(omit, true) }}"
+    execution: "{{ __orchestrator_approval_decisions_item.execution | default(omit, true) }}"
+    name: "{{ __orchestrator_approval_decisions_item.name | default(omit, true) }}"
+    decision: "{{ __orchestrator_approval_decisions_item.decision | mandatory }}"
+    notes: "{{ __orchestrator_approval_decisions_item.notes | default(omit, true) }}"
+
+    # Role Standard Options
+    orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+    orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+    orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+    orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+    orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+    orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+    validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+    request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+  loop: "{{ orchestrator_approval_decisions }}"
+  loop_control:
+    loop_var: __orchestrator_approval_decisions_item
+    label: >-
+      {{ __orchestrator_approval_decisions_item.id if __orchestrator_approval_decisions_item.id is defined
+      else (__orchestrator_approval_decisions_item.execution ~ '/' ~
+      __orchestrator_approval_decisions_item.name) }} -> {{ __orchestrator_approval_decisions_item.decision }}
+  no_log: "{{ orchestrator_configuration_approval_decisions_secure_logging }}"
+  register: orchestrator_decided_approvals
+  when: orchestrator_approval_decisions is defined
+...

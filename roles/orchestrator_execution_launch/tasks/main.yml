@@ -1,0 +1,31 @@
+---
+# Launch Workflow Executions in Automation Orchestrator
+- name: Launch Workflow Executions in Automation Orchestrator
+  kenmoini.automation_orchestrator_config.execution:
+    workflow: "{{ __orchestrator_execution_launch_item.workflow | mandatory }}"
+    project: "{{ __orchestrator_execution_launch_item.project | default(omit, true) }}"
+    trigger_node_id: "{{ __orchestrator_execution_launch_item.trigger_node_id | default(omit, true) }}"
+    input_data: "{{ __orchestrator_execution_launch_item.input_data | default(omit, true) }}"
+    use_published: "{{ __orchestrator_execution_launch_item.use_published | default(omit) }}"
+    wait: "{{ __orchestrator_execution_launch_item.wait | default(omit) }}"
+    interval: "{{ __orchestrator_execution_launch_item.interval | default(omit) }}"
+    timeout: "{{ __orchestrator_execution_launch_item.timeout | default(omit) }}"
+
+    # Role Standard Options
+    orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+    orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+    orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+    orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+    orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+    orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+    validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+    request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+  loop: "{{ orchestrator_launch_executions }}"
+  loop_control:
+    loop_var: __orchestrator_execution_launch_item
+    label: >-
+      {{ __orchestrator_execution_launch_item.project | default('<no_project>') }}/{{ __orchestrator_execution_launch_item.workflow }}
+  no_log: "{{ orchestrator_configuration_execution_launch_secure_logging }}"
+  register: orchestrator_launched_executions
+  when: orchestrator_launch_executions is defined
+...
