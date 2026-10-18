@@ -1,0 +1,28 @@
+---
+namespace: kenmoini
+name: automation_orchestrator_config
+version: 0.1.0
+readme: README.md
+authors:
+  - Ken Moini
+description: Configuration as code for Red Hat Automation Orchestrator, with modules and roles.
+license:
+  - GPL-3.0-or-later
+license_file: LICENSE
+tags:
+  - automation_platform
+  - orchestrator
+  - configuration
+  - infrastructure
+repository: https://github.com/kenmoini/automation_orchestrator_configuration
+build_ignore:
+  - .github
+  - .venv
+  - build
+  - docs/api
+  - docs/superpowers
+  - tests/auth.yml
+  - "*.tar.gz"
+  - .pre-commit-config.yaml
+  - Makefile
+...

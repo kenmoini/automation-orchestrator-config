@@ -1,0 +1,38 @@
+---
+requires_ansible: ">=2.16.0"
+action_groups:
+  orchestrator:
+    - token
+    - api
+    - project
+    - project_info
+    - group
+    - group_info
+    - user
+    - user_info
+    - policy
+    - policy_info
+    - role
+    - role_info
+    - role_assignment
+    - role_assignment_info
+    - credential_type_info
+    - credential
+    - credential_info
+    - integration
+    - integration_info
+    - identity_provider
+    - identity_provider_info
+    - service_account
+    - service_account_info
+    - service_account_credential
+    - setting
+    - setting_info
+    - workflow
+    - workflow_info
+    - execution
+    - execution_info
+    - execution_cancel
+    - approval
+    - approval_info
+...

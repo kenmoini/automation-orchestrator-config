@@ -1,0 +1,11 @@
+.venv/
+build/
+*.tar.gz
+tests/auth.yml
+tests/output/
+.ansible/
+__pycache__/
+*.pyc
+.pytest_cache/
+orchestrator_exports/
+.superpowers/
