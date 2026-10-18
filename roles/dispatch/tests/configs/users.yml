@@ -1,0 +1,15 @@
+---
+orchestrator_users:
+  - username: aoc-test-user-1
+    password: changeme-changeme-1
+    update_password: on_create
+    email: aoc-test-1@example.com
+    first_name: Test
+    last_name: One
+    groups:
+      - aoc-test-group-1
+  - username: aoc-test-user-2
+    password: changeme-changeme-2
+    update_password: on_create
+    is_enabled: false
+...

@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: dispatch
+  author: Ken Moini
+  description: An Ansible Role which launches all of the roles within the kenmoini.automation_orchestrator_config collection.
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.16.0
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags:
+    - orchestrator
+    - configuration
+    - dispatch
+
+dependencies:
+  - role: global_vars
+...

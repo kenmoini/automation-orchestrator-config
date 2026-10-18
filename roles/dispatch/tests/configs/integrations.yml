@@ -1,0 +1,18 @@
+---
+orchestrator_integrations:
+  - name: aoc-test-integration-1
+    description: First test integration
+    integration_type: llm_provider
+    configuration:
+      provider_hint: openai
+      base_url: https://api.openai.com/v1
+    management_credential: aoc-test-credential-1
+    management_credential_project: aoc-test-project-1
+  - name: aoc-test-integration-2
+    integration_type: mcp_server
+    configuration:
+      base_url: https://mcp.example.com
+    enabled: false
+    scope: global
+    discover: false
+...

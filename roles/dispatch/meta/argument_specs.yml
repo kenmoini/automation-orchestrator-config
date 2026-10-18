@@ -1,0 +1,168 @@
+---
+argument_specs:
+  main:
+    short_description: An Ansible Role to call other roles to configure Automation Orchestrator.
+    options:
+      orchestrator_configuration_dispatcher_roles:
+        description: >-
+          Ordered list of the roles to run. Each item has a role name, the variable which gates the role and the tags
+          applied to the role.
+        type: list
+        elements: dict
+        required: false
+        default:
+          - role: orchestrator_settings
+            var: orchestrator_settings
+            tags:
+              - settings
+              - orchestrator_settings
+          - role: orchestrator_identity_providers
+            var: orchestrator_identity_providers
+            tags:
+              - identity_providers
+              - orchestrator_identity_providers
+          - role: orchestrator_groups
+            var: orchestrator_groups
+            tags:
+              - groups
+              - orchestrator_groups
+          - role: orchestrator_users
+            var: orchestrator_users
+            tags:
+              - users
+              - orchestrator_users
+          - role: orchestrator_projects
+            var: orchestrator_projects
+            tags:
+              - projects
+              - orchestrator_projects
+          - role: orchestrator_policies
+            var: orchestrator_policies
+            tags:
+              - policies
+              - orchestrator_policies
+          - role: orchestrator_roles
+            var: orchestrator_roles
+            tags:
+              - roles
+              - orchestrator_roles
+          - role: orchestrator_role_assignments
+            var: orchestrator_role_assignments
+            tags:
+              - role_assignments
+              - orchestrator_role_assignments
+          - role: orchestrator_credentials
+            var: orchestrator_credentials
+            tags:
+              - credentials
+              - orchestrator_credentials
+          - role: orchestrator_integrations
+            var: orchestrator_integrations
+            tags:
+              - integrations
+              - orchestrator_integrations
+          - role: orchestrator_service_accounts
+            var: orchestrator_service_accounts
+            tags:
+              - service_accounts
+              - orchestrator_service_accounts
+          - role: orchestrator_service_account_credentials
+            var: orchestrator_service_account_credentials
+            tags:
+              - service_account_credentials
+              - orchestrator_service_account_credentials
+          - role: orchestrator_workflows
+            var: orchestrator_workflows
+            tags:
+              - workflows
+              - orchestrator_workflows
+          - role: orchestrator_execution_launch
+            var: orchestrator_launch_executions
+            tags:
+              - execution_launch
+              - orchestrator_execution_launch
+          - role: orchestrator_approval_decisions
+            var: orchestrator_approval_decisions
+            tags:
+              - approval_decisions
+              - orchestrator_approval_decisions
+      orchestrator_configuration_dispatcher_exclude_roles:
+        default: []
+        required: false
+        type: list
+        elements: str
+        description: Names of roles to skip, applied to the dispatcher role list when the roles are run.
+      dispatch_include_wildcard_vars:
+        default: false
+        required: false
+        type: bool
+        description: Whether to combine wildcard variables such as `orchestrator_projects_all` into their base variable before running the roles.
+
+      # Async variables
+      orchestrator_configuration_async_retries:
+        default: 50
+        required: false
+        description: This variable sets number of retries across all roles as a default.
+      orchestrator_configuration_async_delay:
+        default: 1
+        required: false
+        description: This variable sets delay between retries across all roles as a default.
+
+      # No_log variables
+      orchestrator_configuration_secure_logging:
+        default: false
+        required: false
+        type: bool
+        description: This variable enables secure logging across all roles as a default.
+
+      # Generic across all roles
+      orchestrator_state:
+        default: present
+        required: false
+        description: The state all objects will take unless overridden by object default.
+        type: str
+      orchestrator_hostname:
+        default: None
+        required: false
+        description: Hostname or URL of the Automation Orchestrator server.
+        type: str
+      orchestrator_validate_certs:
+        default: true
+        required: false
+        description: Whether or not to validate the Automation Orchestrator server's SSL certificate.
+        type: bool
+      orchestrator_username:
+        default: None
+        required: false
+        description: User on the Automation Orchestrator server. Either username / password, a token, or client ID / secret needs to be specified.
+        type: str
+      orchestrator_password:
+        default: None
+        required: false
+        description: >-
+          Password of the user on the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_token:
+        default: None
+        required: false
+        description: Token for the Automation Orchestrator server. This should be stored in an Ansible Vault or elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_client_id:
+        default: None
+        required: false
+        description: OAuth client ID for the Automation Orchestrator server, used with the client secret.
+        type: str
+      orchestrator_client_secret:
+        default: None
+        required: false
+        description: >-
+          OAuth client secret for the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_request_timeout:
+        default: 10
+        required: false
+        description: Timeout in seconds for requests to the Automation Orchestrator server.
+        type: float
+...

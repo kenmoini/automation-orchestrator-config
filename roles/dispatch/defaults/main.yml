@@ -1,0 +1,82 @@
+---
+dispatch_include_wildcard_vars: false
+
+orchestrator_configuration_dispatcher_exclude_roles: []
+
+orchestrator_configuration_dispatcher_roles:
+  - role: orchestrator_settings
+    var: orchestrator_settings
+    tags:
+      - settings
+      - orchestrator_settings
+  - role: orchestrator_identity_providers
+    var: orchestrator_identity_providers
+    tags:
+      - identity_providers
+      - orchestrator_identity_providers
+  - role: orchestrator_groups
+    var: orchestrator_groups
+    tags:
+      - groups
+      - orchestrator_groups
+  - role: orchestrator_users
+    var: orchestrator_users
+    tags:
+      - users
+      - orchestrator_users
+  - role: orchestrator_projects
+    var: orchestrator_projects
+    tags:
+      - projects
+      - orchestrator_projects
+  - role: orchestrator_policies
+    var: orchestrator_policies
+    tags:
+      - policies
+      - orchestrator_policies
+  - role: orchestrator_roles
+    var: orchestrator_roles
+    tags:
+      - roles
+      - orchestrator_roles
+  - role: orchestrator_role_assignments
+    var: orchestrator_role_assignments
+    tags:
+      - role_assignments
+      - orchestrator_role_assignments
+  - role: orchestrator_credentials
+    var: orchestrator_credentials
+    tags:
+      - credentials
+      - orchestrator_credentials
+  - role: orchestrator_integrations
+    var: orchestrator_integrations
+    tags:
+      - integrations
+      - orchestrator_integrations
+  - role: orchestrator_service_accounts
+    var: orchestrator_service_accounts
+    tags:
+      - service_accounts
+      - orchestrator_service_accounts
+  - role: orchestrator_service_account_credentials
+    var: orchestrator_service_account_credentials
+    tags:
+      - service_account_credentials
+      - orchestrator_service_account_credentials
+  - role: orchestrator_workflows
+    var: orchestrator_workflows
+    tags:
+      - workflows
+      - orchestrator_workflows
+  - role: orchestrator_execution_launch
+    var: orchestrator_launch_executions
+    tags:
+      - execution_launch
+      - orchestrator_execution_launch
+  - role: orchestrator_approval_decisions
+    var: orchestrator_approval_decisions
+    tags:
+      - approval_decisions
+      - orchestrator_approval_decisions
+...

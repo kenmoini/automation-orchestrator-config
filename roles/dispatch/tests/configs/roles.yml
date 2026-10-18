@@ -1,0 +1,11 @@
+---
+orchestrator_roles:
+  - name: aoc-test-role-1
+    description: First test role
+    policies:
+      - aoc-test-policy-1
+  - name: aoc-test-role-2
+    project: aoc-test-project-1
+    policies:
+      - aoc-test-policy-2
+...

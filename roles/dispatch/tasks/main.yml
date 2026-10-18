@@ -1,0 +1,33 @@
+---
+- name: Sort out vars that are included
+  ansible.builtin.include_tasks: include_wildcard_vars.yml
+  when: dispatch_include_wildcard_vars
+  tags: always
+
+- name: Run the kenmoini.automation_orchestrator_config roles that have variables defined
+  ansible.builtin.include_role:
+    name: "{{ __role.role }}"
+    apply:
+      tags: "{{ __role.tags }}"
+  when: vars[__role.var] is defined
+  tags: always
+  loop: "{{ orchestrator_configuration_dispatcher_roles | rejectattr('role', 'in', orchestrator_configuration_dispatcher_exclude_roles) | list }}"
+  loop_control:
+    loop_var: __role
+
+- name: Display errors and fail
+  when:
+    - orchestrator_configuration_role_errors is defined
+    - orchestrator_configuration_role_errors is mapping
+    - orchestrator_configuration_role_errors | dict2items | selectattr('value', 'ne', []) | list | length > 0
+  ansible.builtin.debug:
+    msg:
+      - "Errors encountered applying configurations:"
+      - "{{ orchestrator_configuration_role_errors }}"
+  failed_when: orchestrator_configuration_role_errors | dict2items | selectattr('value', 'ne', []) | list | length > 0
+
+- name: Fail the playbook if there were errors (check mode only)
+  ansible.builtin.fail:
+    msg: The execution has failed because of errors (probably due to missing dependencies caused by check mode).
+  when: ansible_check_mode and error_flag is defined and error_flag
+...

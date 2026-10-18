@@ -1,0 +1,11 @@
+---
+orchestrator_launch_executions:
+  - workflow: aoc-test-wait-workflow
+    project: aoc-test-project-1
+    input_data:
+      environment: test
+  - workflow: aoc-test-wait-workflow
+    project: aoc-test-project-1
+    wait: true
+    timeout: 120
+...

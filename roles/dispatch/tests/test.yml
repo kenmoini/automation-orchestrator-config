@@ -1,0 +1,21 @@
+---
+- name: Run dispatch job to Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    orchestrator_validate_certs: false
+    orchestrator_hostname: orchestrator.example.com
+    orchestrator_username: admin
+    orchestrator_password: changeme
+
+  pre_tasks:
+    - name: Include vars from the configs directory
+      ansible.builtin.include_vars:
+        dir: ./configs
+        extensions: [yml]
+      tags: always
+
+  roles:
+    - kenmoini.automation_orchestrator_config.dispatch
+...
