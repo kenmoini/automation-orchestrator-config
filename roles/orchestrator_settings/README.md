@@ -25,22 +25,6 @@ The `kenmoini.automation_orchestrator_config` collection must be installed.
 |`orchestrator_configuration_register`|""|no|Specify a variable to register the values of all orchestrator configuration tasks. This will create an object with each object type as an element containing a list of each item created.||
 |`orchestrator_settings`|`see below`|yes|Dictionary of `key: value` settings or list of items. Described below.||
 
-### Enforcing defaults
-
-The following Variables complement each other.
-If both variables are not set, enforcing default values is not done.
-Enabling these variables enforces default values on options that are optional in the Orchestrator API.
-This should be enabled to enforce configuration and prevent configuration drift. It is recommended to be enabled, however it is not enforced by default.
-
-Enabling this will enforce configuration without specifying every option in the configuration files.
-
-`orchestrator_configuration_settings_enforce_defaults` defaults to the value of `orchestrator_configuration_enforce_defaults` if it is not explicitly called. This allows for enforced defaults to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
-
-|Variable Name|Default Value|Required|Description|
-|:---:|:---:|:---:|:---:|
-|`orchestrator_configuration_settings_enforce_defaults`|`false`|no|Whether or not to enforce default option values on only the settings role|
-|`orchestrator_configuration_enforce_defaults`|`false`|no|This variable enables enforced default values as well, but is shared across multiple roles, see above.|
-
 ### Secure Logging Variables
 
 The following Variables complement each other.
@@ -52,6 +36,11 @@ The role defaults to false as normally the setting task does not include sensiti
 |:---:|:---:|:---:|:---:|
 |`orchestrator_configuration_settings_secure_logging`|`false`|no|Whether or not to include the sensitive Setting role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
 |`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+
+### Failure handling and value templating
+
+In dictionary form the settings are applied with a single synchronous module call; a failure fails the play immediately and ignores `orchestrator_configuration_collect_logs`.
+In list form `value` is templated by Ansible, so quote strings you want kept as strings (for example `"'30'"`), otherwise they may be converted to numbers or booleans.
 
 ### Asynchronous Retry Variables
 

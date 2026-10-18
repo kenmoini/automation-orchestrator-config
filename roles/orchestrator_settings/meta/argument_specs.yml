@@ -4,9 +4,10 @@ argument_specs:
     short_description: An Ansible Role to update Settings in Automation Orchestrator.
     options:
       orchestrator_settings:
-        description: Dictionary of key/value settings, or a list of items with name, value and expected_version
-        type: list
-        elements: dict
+        description: >-
+          Either a dictionary of setting keys and values (applied with a single call), or a list of dictionaries with
+          name, value and expected_version.
+        type: raw
 #        options:
 #          name:
 #            required: true
@@ -50,16 +51,6 @@ argument_specs:
         default: 0
         required: false
         description: This variable sets the pause between each item in the loop across all roles as a default.
-      orchestrator_configuration_settings_enforce_defaults:
-        default: "{{ orchestrator_configuration_enforce_defaults | default(false) }}"
-        required: false
-        type: bool
-        description: Whether or not to enforce default values for optional options of this role.
-      orchestrator_configuration_enforce_defaults:
-        default: false
-        required: false
-        type: bool
-        description: This variable enables enforced default values across all roles as a default.
       orchestrator_configuration_async_dir:
         default: null
         required: false

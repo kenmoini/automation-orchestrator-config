@@ -1,0 +1,17 @@
+---
+- name: Apply Settings as a dictionary to Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    orchestrator_validate_certs: false
+    orchestrator_hostname: orchestrator.example.com
+    orchestrator_username: admin
+    orchestrator_password: changeme
+    orchestrator_settings:
+      aoc-test-setting-1: 30
+      aoc-test-setting-2: true
+
+  roles:
+    - { role: ../.., when: orchestrator_settings is defined }
+...

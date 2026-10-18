@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    short_description: An Ansible Role to create, update and delete Service Accounts in Automation Orchestrator.
+    short_description: An Ansible Role to create, update, enable, disable and delete Service Accounts in Automation Orchestrator.
     options:
       orchestrator_service_accounts:
         description: Data structure describing your service accounts

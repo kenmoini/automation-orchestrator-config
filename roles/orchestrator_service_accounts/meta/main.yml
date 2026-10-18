@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: service_accounts
   author: Ken Moini
-  description: An Ansible Role to create, update and delete Service Accounts in Automation Orchestrator.
+  description: An Ansible Role to create, update, enable, disable and delete Service Accounts in Automation Orchestrator.
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value

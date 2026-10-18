@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    short_description: An Ansible Role to create, update and delete Role Assignments in Automation Orchestrator.
+    short_description: An Ansible Role to create and delete Role Assignments in Automation Orchestrator.
     options:
       orchestrator_role_assignments:
         description: Data structure describing your role assignments
