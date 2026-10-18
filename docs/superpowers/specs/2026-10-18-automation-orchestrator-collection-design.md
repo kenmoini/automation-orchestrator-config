@@ -170,7 +170,7 @@ All accept names or UUIDs for references. `_info` modules take optional `name`/f
 | `user` / `user_info` | `/users`, `PUT /users/{id}/groups` | `username`, `password` (min 14), `update_password: on_create|always`, `email`, `first_name`, `last_name`, `is_enabled`, `groups: [names]` (declarative set; omit = untouched). Federated users: metadata/groups only |
 | `policy` / `policy_info` | `/policies` | `statements[]{effect,actions,scope,conditions}`, optional `project` |
 | `role` / `role_info` | `/roles` | `policies: [names]`, optional `project` |
-| `role_assignment` / `role_assignment_info` | `/role_assignments` | `user` xor `group`, `role`, optional `project`; idempotent via list filters |
+| `role_assignment` / `role_assignment_info` | `/role_assignments` | exactly one of `user`, `group`, `service_account` (SA resolved in `project`, sent as `principal_id`, matched on `principal_type: service_account`), `role`, optional `project`; idempotent via list filters |
 | `credential_type_info` | `/credential_types` | read-only; resolve by name |
 | `credential` / `credential_info` | `/credentials`, `/projects/{id}/credentials` | `credential_type` (name), `project` (required), `inputs` (no_log), `enabled`, `update_secrets` (default true → sending inputs reports changed) |
 | `integration` / `integration_info` | `/integrations` + `/projects/{pid}`, `/models`, `/tools`, `/refresh`, `/validate` | `integration_type` (mcp_server/llm_provider/ansible_automation_platform), `configuration` (dict, `integration_type` injected), `management_credential` (+`management_credential_project`), `enabled`, `scope`, `projects: [names]` (reconcile assign/unassign), `models: [{name|model_id, enabled, is_default}]`, `tools: [{name, enabled}]`, `refresh: bool`, `validate: bool` |

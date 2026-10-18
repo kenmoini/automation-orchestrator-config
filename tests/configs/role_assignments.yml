@@ -6,4 +6,7 @@ orchestrator_role_assignments:
   - role: aoc-test-role
     group: aoc-test-group
     project: aoc-test-project-1
+  - role: aoc-test-role
+    service_account: aoc-test-service-account
+    project: aoc-test-project-1
 ...

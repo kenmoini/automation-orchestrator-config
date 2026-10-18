@@ -15,11 +15,17 @@ argument_specs:
 #          user:
 #            required: false
 #            type: str
-#            description: Username or UUID of the user receiving the role. Mutually exclusive with group; one of the two is required.
+#            description: Username or UUID of the user receiving the role. Exactly one of user, group or service_account is required.
 #          group:
 #            required: false
 #            type: str
-#            description: Name or UUID of the group receiving the role. Mutually exclusive with user; one of the two is required.
+#            description: Name or UUID of the group receiving the role. Exactly one of user, group or service_account is required.
+#          service_account:
+#            required: false
+#            type: str
+#            description: >-
+#              Name or UUID of the service account receiving the role (looked up in project when set).
+#              Exactly one of user, group or service_account is required.
 #          project:
 #            required: false
 #            type: str

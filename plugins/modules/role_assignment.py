@@ -11,7 +11,7 @@ DOCUMENTATION = r"""
 module: role_assignment
 short_description: Manage role assignments in the Automation Orchestrator
 description:
-  - Grants a role to a user or a group, globally or within a project, and revokes it again.
+  - Grants a role to a user, a group or a service account, globally or within a project, and revokes it again.
   - Role assignments are immutable, so the module only creates or deletes them. An assignment is identified by its role, its principal and its project.
   - Without O(project) the assignment is global. A project assignment is never mistaken for a global one.
 version_added: "0.1.0"
@@ -35,12 +35,19 @@ options:
   user:
     description:
       - Username or UUID of the user receiving the role.
-      - Mutually exclusive with O(group). One of O(user) or O(group) is required.
+      - Mutually exclusive with O(group) and O(service_account). One of O(user), O(group) or O(service_account) is required.
     type: str
   group:
     description:
       - Name or UUID of the group receiving the role.
-      - Mutually exclusive with O(user). One of O(user) or O(group) is required.
+      - Mutually exclusive with O(user) and O(service_account). One of O(user), O(group) or O(service_account) is required.
+    type: str
+  service_account:
+    description:
+      - Name or UUID of the service account receiving the role.
+      - A name is looked up among the service accounts of O(project) when O(project) is set, else among all service accounts.
+      - The API stores a service account principal in C(principal_id), like a user.
+      - Mutually exclusive with O(user) and O(group). One of O(user), O(group) or O(service_account) is required.
     type: str
   project:
     description:
@@ -74,6 +81,14 @@ EXAMPLES = r"""
     role: operators
     group: platform-team
 
+- name: Grant a role to a service account in its project
+  kenmoini.automation_orchestrator_config.role_assignment:
+    orchestrator_host: orchestrator.example.com
+    orchestrator_token: "{{ orchestrator_token }}"
+    role: project-editor
+    service_account: ci-pipeline
+    project: platform
+
 - name: Revoke a role
   kenmoini.automation_orchestrator_config.role_assignment:
     orchestrator_host: orchestrator.example.com
@@ -99,16 +114,16 @@ role_assignment:
       description: ID of the assignment.
       type: str
     principal_id:
-      description: ID of the user, or V(null) for a group.
+      description: ID of the user or service account, or V(null) for a group.
       type: str
     group_id:
-      description: ID of the group, or V(null) for a user.
+      description: ID of the group, or V(null) for a user or service account.
       type: str
     principal_name:
-      description: Name of the user or group.
+      description: Name of the user, group or service account.
       type: str
     principal_type:
-      description: Either V(user) or V(group).
+      description: One of V(user), V(group) or V(service_account).
       type: str
     role_name:
       description: Name of the role.
@@ -142,14 +157,15 @@ def main():
         role=dict(type="str", required=True),
         user=dict(type="str"),
         group=dict(type="str"),
+        service_account=dict(type="str"),
         project=dict(type="str"),
         state=dict(type="str", default="present", choices=["present", "absent"]),
     )
     module = OrchestratorModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        mutually_exclusive=[["user", "group"]],
-        required_one_of=[["user", "group"]],
+        mutually_exclusive=[["user", "group", "service_account"]],
+        required_one_of=[["user", "group", "service_account"]],
     )
     module.result_key = "role_assignment"
     params = module.params
@@ -165,9 +181,14 @@ def main():
 
     if params["user"]:
         principal_kind, principal_label, principal_key, principal_type = "user", params["user"], "principal_id", "user"
+    elif params["service_account"]:
+        principal_kind, principal_label, principal_key, principal_type = "service_account", params["service_account"], "principal_id", "service_account"
     else:
         principal_kind, principal_label, principal_key, principal_type = "group", params["group"], "group_id", "group"
-    principal_id = module.resolve_id(principal_kind, principal_label)
+    if principal_kind == "service_account":
+        principal_id = module.resolve_id(principal_kind, principal_label, project_id=project_id)
+    else:
+        principal_id = module.resolve_id(principal_kind, principal_label)
 
     query = module.build_desired({"role_name": role_name, "project_id": project_id, principal_key: principal_id})
     found = module.get_all("/role_assignments", query, context="Failed to look up role assignments")

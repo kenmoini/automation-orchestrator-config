@@ -218,3 +218,70 @@ def test_absent_delete_404_is_noop(fake_api):
     result = run_module(ra_module.main, {"role": "ops", "user": UID, "project": PID, "state": "absent", "_ansible_diff": True}, fake_api)
     assert result["changed"] is False
     assert result["diff"] == {"before": {}, "after": {}}
+
+
+# ------------------------------------------------------------ service account principals
+
+SAID = "55555555-5555-4555-8555-555555555555"
+SA_LIST = "/api/v1/service_accounts"
+
+
+def _sa_list(*objs):
+    return {"resources": list(objs), "next": None}
+
+
+def test_create_service_account_assignment_body(fake_api):
+    fake_api.add("GET", SA_LIST, 200, _sa_list({"id": SAID, "name": "ci", "project_id": PID}), query={"name": "ci"})
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", LIST, 201, _ra(principal_id=SAID, principal_type="service_account", principal_name="ci"))
+    result = run_module(ra_module.main, {"role": "ops", "service_account": "ci", "project": PID}, fake_api)
+    assert result["changed"] is True
+    assert _calls(fake_api, "POST")[0]["body"] == {"role_name": "ops", "principal_id": SAID, "project_id": PID}
+    lookup = [c for c in fake_api.calls if c["path"] == LIST][0]
+    assert lookup["query"]["principal_id"] == SAID
+
+
+def test_service_account_name_resolved_within_project(fake_api):
+    other = "66666666-6666-4666-8666-666666666666"
+    sas = _sa_list({"id": other, "name": "ci", "project_id": "77777777-7777-4777-8777-777777777777"}, {"id": SAID, "name": "ci", "project_id": PID})
+    fake_api.add("GET", SA_LIST, 200, sas, query={"name": "ci"})
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", LIST, 201, _ra(principal_id=SAID, principal_type="service_account"))
+    run_module(ra_module.main, {"role": "ops", "service_account": "ci", "project": PID}, fake_api)
+    assert _calls(fake_api, "POST")[0]["body"]["principal_id"] == SAID
+
+
+def test_existing_service_account_assignment_noop(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_ra(principal_id=SAID, principal_type="service_account")))
+    result = run_module(ra_module.main, {"role": "ops", "service_account": SAID, "project": PID}, fake_api)
+    assert result["changed"] is False
+    assert _calls(fake_api, "POST") == []
+
+
+def test_user_assignment_not_mistaken_for_service_account(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_ra(principal_id=SAID, principal_type="user")))
+    fake_api.add("POST", LIST, 201, _ra(principal_id=SAID, principal_type="service_account"))
+    result = run_module(ra_module.main, {"role": "ops", "service_account": SAID, "project": PID}, fake_api)
+    assert result["changed"] is True
+
+
+def test_service_account_and_user_mutually_exclusive(fake_api):
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(ra_module.main, {"role": "ops", "user": UID, "service_account": SAID}, fake_api)
+    assert "mutually exclusive" in exc.value.kwargs["msg"]
+
+
+def test_info_service_account_filter(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    run_module(info_module.main, {"service_account": SAID, "principal_type": "service_account"}, fake_api)
+    assert fake_api.calls[0]["query"]["principal_id"] == SAID
+    assert fake_api.calls[0]["query"]["principal_type"] == "service_account"
+
+
+def test_info_service_account_name_resolved_within_project(fake_api):
+    fake_api.add("GET", SA_LIST, 200, _sa_list({"id": SAID, "name": "ci", "project_id": PID}), query={"name": "ci"})
+    fake_api.add("GET", LIST, 200, _list())
+    run_module(info_module.main, {"service_account": "ci", "project": PID}, fake_api)
+    query = [c for c in fake_api.calls if c["path"] == LIST][0]["query"]
+    assert query["principal_id"] == SAID
+    assert query["project_id"] == PID

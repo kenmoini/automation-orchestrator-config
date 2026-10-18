@@ -11,7 +11,7 @@ DOCUMENTATION = r"""
 module: role_assignment_info
 short_description: Gather information about role assignments in the Automation Orchestrator
 description:
-  - Lists role assignments, optionally filtered by role, user, group, project, scope or principal type.
+  - Lists role assignments, optionally filtered by role, user, group, service account, project, scope or principal type.
 version_added: "0.1.0"
 author:
   - Ken Moini (@kenmoini)
@@ -33,6 +33,12 @@ options:
   group:
     description: Name or UUID of a group. Return only the assignments of this group.
     type: str
+  service_account:
+    description:
+      - Name or UUID of a service account. Return only the assignments of this service account.
+      - A name is looked up among the service accounts of O(project) when O(project) is set, else among all service accounts.
+      - Mutually exclusive with O(user), because both filter on C(principal_id).
+    type: str
   project:
     description: Name or UUID of a project. Return only the assignments scoped to this project.
     type: str
@@ -43,7 +49,7 @@ options:
   principal_type:
     description: Return only assignments granted to this kind of principal.
     type: str
-    choices: [user, group]
+    choices: [user, group, service_account]
 seealso:
   - module: kenmoini.automation_orchestrator_config.role_assignment
 """
@@ -95,11 +101,12 @@ def main():
         role=dict(type="str"),
         user=dict(type="str"),
         group=dict(type="str"),
+        service_account=dict(type="str"),
         project=dict(type="str"),
         scope=dict(type="str", choices=["system", "project"]),
-        principal_type=dict(type="str", choices=["user", "group"]),
+        principal_type=dict(type="str", choices=["user", "group", "service_account"]),
     )
-    module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
+    module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True, mutually_exclusive=[["user", "service_account"]])
     params = module.params
 
     project_id = module.resolve_id("project", params["project"]) if params["project"] else None
@@ -110,10 +117,16 @@ def main():
             module.fail_json(msg="role '{0}' not found".format(role_name))
         role_name = role["name"]
 
+    principal_id = None
+    if params["user"]:
+        principal_id = module.resolve_id("user", params["user"])
+    elif params["service_account"]:
+        principal_id = module.resolve_id("service_account", params["service_account"], project_id=project_id)
+
     query = module.build_desired(
         {
             "role_name": role_name or None,
-            "principal_id": module.resolve_id("user", params["user"]) if params["user"] else None,
+            "principal_id": principal_id,
             "group_id": module.resolve_id("group", params["group"]) if params["group"] else None,
             "project_id": project_id,
             "scope": params["scope"],

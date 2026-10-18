@@ -73,15 +73,16 @@ This also speeds up the overall role.
 
 ## Role Assignment Data Structure
 
-Each assignment is identified by `role` and one of `user` or `group` (plus `project` when scoped); there is no `name`.
+Each assignment is identified by `role` and one of `user`, `group` or `service_account` (plus `project` when scoped); there is no `name`.
 
 ### Role Assignment Variables
 
 |Variable Name|Default Value|Required|Type|Description|
 |:---:|:---:|:---:|:---:|:---:|
 |`role`|""|yes|str|Name or UUID of the role to assign.|
-|`user`|""|no|str|Username or UUID of the user receiving the role. Mutually exclusive with `group`; one of the two is required.|
-|`group`|""|no|str|Name or UUID of the group receiving the role. Mutually exclusive with `user`; one of the two is required.|
+|`user`|""|no|str|Username or UUID of the user receiving the role. Exactly one of `user`, `group` or `service_account` is required.|
+|`group`|""|no|str|Name or UUID of the group receiving the role. Exactly one of `user`, `group` or `service_account` is required.|
+|`service_account`|""|no|str|Name or UUID of the service account receiving the role, looked up in `project` when it is set. Exactly one of `user`, `group` or `service_account` is required. The dispatch role runs service accounts before role assignments.|
 |`project`|""|no|str|Name or UUID of the project the assignment is scoped to. Omit it for a global assignment.|
 |`state`|`present`|no|str|Desired state of the resource: `present`, `absent` (`absent` is permanent).|
 |`register`|""|no|str|Variable to set based on the result of the object creation/modification.|
@@ -95,6 +96,9 @@ orchestrator_role_assignments:
     user: jdoe
   - role: workflow-viewer
     group: platform-admins
+    project: Platform Team
+  - role: workflow-viewer
+    service_account: ci-pipeline
     project: Platform Team
   - role: workflow-viewer
     user: old-user
@@ -113,6 +117,11 @@ orchestrator_role_assignments:
     {
       "role": "workflow-viewer",
       "group": "platform-admins",
+      "project": "Platform Team"
+    },
+    {
+      "role": "workflow-viewer",
+      "service_account": "ci-pipeline",
       "project": "Platform Team"
     },
     {

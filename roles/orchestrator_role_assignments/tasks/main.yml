@@ -9,6 +9,7 @@
         role: "{{ __orchestrator_role_assignments_item.role | mandatory }}"
         user: "{{ __orchestrator_role_assignments_item.user | default(omit, true) }}"
         group: "{{ __orchestrator_role_assignments_item.group | default(omit, true) }}"
+        service_account: "{{ __orchestrator_role_assignments_item.service_account | default(omit, true) }}"
         project: "{{ __orchestrator_role_assignments_item.project | default(omit, true) }}"
         state: "{{ __orchestrator_role_assignments_item.state | default(orchestrator_state | default('present')) }}"
 
@@ -26,7 +27,9 @@
         loop_var: __orchestrator_role_assignments_item
         label: >-
           {{ __operation.verb }} role_assignment {{ __orchestrator_role_assignments_item.role }} -> {{
-          __orchestrator_role_assignments_item.user | default(__orchestrator_role_assignments_item.group) }}
+          __orchestrator_role_assignments_item.user if __orchestrator_role_assignments_item.user is defined
+          else (__orchestrator_role_assignments_item.group if __orchestrator_role_assignments_item.group is defined
+          else __orchestrator_role_assignments_item.service_account | default('')) }}
         pause: "{{ orchestrator_configuration_role_assignments_loop_delay }}"
       async: "{{ ansible_check_mode | ternary(0, 1000) }}"
       poll: 0
@@ -52,9 +55,7 @@
         label: >-
           {{ __operation.verb }} Orchestrator Role Assignment {{
           __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.role }} -> {{
-          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.user |
-          default(__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.group) }} | Wait for
-          finish the role_assignment {{ __operation.action }}
+          __orchestrator_role_assignments_principal }} | Wait for finish the role_assignment {{ __operation.action }}
       vars:
         cas_secure_logging: "{{ orchestrator_configuration_role_assignments_secure_logging }}"
         cas_async_delay: "{{ orchestrator_configuration_role_assignments_async_delay }}"
@@ -62,15 +63,18 @@
         cas_job_async_results_item: "{{ __orchestrator_role_assignments_job_async_results_item }}"
         cas_register_subvar: orchestrator_role_assignments
         cas_error_list_var_name: "orchestrator_role_assignments_errors"
+        __orchestrator_role_assignments_result_item: "{{ __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item }}"
+        __orchestrator_role_assignments_principal: >-
+          {{ __orchestrator_role_assignments_result_item.user if __orchestrator_role_assignments_result_item.user is defined
+          else (__orchestrator_role_assignments_result_item.group if __orchestrator_role_assignments_result_item.group is defined
+          else __orchestrator_role_assignments_result_item.service_account | default('')) }}
         __operation: >-
           {{ operation_translate[__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.state |
           default(orchestrator_state) | default('present')] }}
         cas_object_label: >-
           {{ __operation.verb }} Orchestrator Role Assignment {{
           __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.role }} -> {{
-          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.user |
-          default(__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.group) }} | Wait for
-          finish the role_assignment {{ __operation.action }}
+          __orchestrator_role_assignments_principal }} | Wait for finish the role_assignment {{ __operation.action }}
 
   always:
     - name: Cleanup async results files
