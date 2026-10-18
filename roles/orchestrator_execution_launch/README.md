@@ -28,14 +28,14 @@ The `kenmoini.automation_orchestrator_config` collection must be installed.
 ### Secure Logging Variables
 
 The following Variables complement each other.
-If both variables are not set, secure logging defaults to false.
-The role defaults to false as normally the execution launch task does not include sensitive information.
+If neither variable is set, secure logging defaults to `true` for this role because `input_data` may contain secrets.
+Set `orchestrator_configuration_execution_launch_secure_logging: false` only to debug, and never with real secrets in the items.
 `orchestrator_configuration_execution_launch_secure_logging` defaults to the value of `orchestrator_configuration_secure_logging` if it is not explicitly called. This allows for secure logging to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
 
 |Variable Name|Default Value|Required|Description|
 |:---:|:---:|:---:|:---:|
-|`orchestrator_configuration_execution_launch_secure_logging`|`false`|no|Whether or not to include the sensitive execution launch role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
-|`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+|`orchestrator_configuration_execution_launch_secure_logging`|`true`|no|Whether or not to hide the sensitive tasks of this role from the log. Defaults to `true` for this role because items contain secrets.|
+|`orchestrator_configuration_secure_logging`|unset|no|Shared across multiple roles, see above. When it is unset this role still defaults to `true`.|
 
 ## Data Structure
 

@@ -45,14 +45,14 @@ Enabling this will enforce configuration without specifying every option in the 
 ### Secure Logging Variables
 
 The following Variables complement each other.
-If both variables are not set, secure logging defaults to false.
-The role defaults to false to match the other roles, but it is recommended to set it to `true` for this role because the items can carry secrets (the one-time `client_secret` in the module result). With secure logging disabled those values can be printed in the task log.
+If neither variable is set, secure logging defaults to `true` for this role because items contain secrets (the one-time `client_secret` in the module result).
+Set `orchestrator_configuration_service_account_credentials_secure_logging: false` only to debug, and never with real secrets in the items.
 `orchestrator_configuration_service_account_credentials_secure_logging` defaults to the value of `orchestrator_configuration_secure_logging` if it is not explicitly called. This allows for secure logging to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
 
 |Variable Name|Default Value|Required|Description|
 |:---:|:---:|:---:|:---:|
-|`orchestrator_configuration_service_account_credentials_secure_logging`|`false`|no|Whether or not to include the sensitive Service Account Credential role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
-|`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+|`orchestrator_configuration_service_account_credentials_secure_logging`|`true`|no|Whether or not to hide the sensitive tasks of this role from the log. Defaults to `true` for this role because items contain secrets.|
+|`orchestrator_configuration_secure_logging`|unset|no|Shared across multiple roles, see above. When it is unset this role still defaults to `true`.|
 
 ### Asynchronous Retry Variables
 
@@ -133,7 +133,7 @@ orchestrator_service_account_credentials:
 
 ### Handling the one-time secret
 
-The `client_secret` of a service account credential is returned **only once**, in the result of the run that creates or rotates the credential. It cannot be read back later. Capture it with `register` (the value is also collected under `orchestrator_configuration_register`) and store it outside of Ansible, for example in a vault, immediately. Always set `orchestrator_configuration_secure_logging: true` (or `orchestrator_configuration_service_account_credentials_secure_logging: true`) so the secret is not printed in the log.
+The `client_secret` of a service account credential is returned **only once**, in the result of the run that creates or rotates the credential. It cannot be read back later. Capture it with `register` (the value is also collected under `orchestrator_configuration_register`) and store it outside of Ansible, for example in a vault, immediately. Secure logging defaults to `true` for this role so the secret is not printed in the log; keep it that way (do not set `orchestrator_configuration_secure_logging` or `orchestrator_configuration_service_account_credentials_secure_logging` to `false`).
 
 ```yaml
 ---

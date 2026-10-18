@@ -45,14 +45,14 @@ Enabling this will enforce configuration without specifying every option in the 
 ### Secure Logging Variables
 
 The following Variables complement each other.
-If both variables are not set, secure logging defaults to false.
-The role defaults to false to match the other roles, but it is recommended to set it to `true` for this role because the items can carry secrets (`configuration.client_secret`). With secure logging disabled those values can be printed in the task log.
+If neither variable is set, secure logging defaults to `true` for this role because items contain secrets (`configuration.client_secret`).
+Set `orchestrator_configuration_identity_providers_secure_logging: false` only to debug, and never with real secrets in the items.
 `orchestrator_configuration_identity_providers_secure_logging` defaults to the value of `orchestrator_configuration_secure_logging` if it is not explicitly called. This allows for secure logging to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
 
 |Variable Name|Default Value|Required|Description|
 |:---:|:---:|:---:|:---:|
-|`orchestrator_configuration_identity_providers_secure_logging`|`false`|no|Whether or not to include the sensitive Identity Provider role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
-|`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+|`orchestrator_configuration_identity_providers_secure_logging`|`true`|no|Whether or not to hide the sensitive tasks of this role from the log. Defaults to `true` for this role because items contain secrets.|
+|`orchestrator_configuration_secure_logging`|unset|no|Shared across multiple roles, see above. When it is unset this role still defaults to `true`.|
 
 ### Asynchronous Retry Variables
 
@@ -143,7 +143,7 @@ orchestrator_identity_providers:
 
 ### Secrets
 
-`configuration.client_secret` is sensitive and is a key of a dict, so Ansible cannot hide it from the task arguments. Pass it from an Ansible Vault and set `orchestrator_configuration_secure_logging: true`. Set `update_secrets: false` after the first run to keep the secret from being rewritten.
+`configuration.client_secret` is sensitive. The module masks it in its logged arguments and this role hides its tasks from the log by default (`orchestrator_configuration_identity_providers_secure_logging` defaults to `true`). Still pass it from an Ansible Vault. Set `update_secrets: false` after the first run to keep the secret from being rewritten.
 
 ## Playbook Examples
 

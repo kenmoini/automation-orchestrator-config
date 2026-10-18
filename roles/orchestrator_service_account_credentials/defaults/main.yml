@@ -1,6 +1,6 @@
 ---
 orchestrator_service_account_credentials: []
-orchestrator_configuration_service_account_credentials_secure_logging: "{{ orchestrator_configuration_secure_logging | default('false') }}"
+orchestrator_configuration_service_account_credentials_secure_logging: "{{ orchestrator_configuration_secure_logging | default('true') }}"
 orchestrator_configuration_service_account_credentials_async_retries: "{{ orchestrator_configuration_async_retries | default(50) }}"
 orchestrator_configuration_service_account_credentials_async_delay: "{{ orchestrator_configuration_async_delay | default(1) }}"
 orchestrator_configuration_service_account_credentials_loop_delay: "{{ orchestrator_configuration_loop_delay | default(0) }}"

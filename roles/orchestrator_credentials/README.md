@@ -45,14 +45,14 @@ Enabling this will enforce configuration without specifying every option in the 
 ### Secure Logging Variables
 
 The following Variables complement each other.
-If both variables are not set, secure logging defaults to false.
-The role defaults to false to match the other roles, but it is recommended to set it to `true` for this role because the items can carry secrets (`inputs`). With secure logging disabled those values can be printed in the task log.
+If neither variable is set, secure logging defaults to `true` for this role because items contain secrets (`inputs`).
+Set `orchestrator_configuration_credentials_secure_logging: false` only to debug, and never with real secrets in the items.
 `orchestrator_configuration_credentials_secure_logging` defaults to the value of `orchestrator_configuration_secure_logging` if it is not explicitly called. This allows for secure logging to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
 
 |Variable Name|Default Value|Required|Description|
 |:---:|:---:|:---:|:---:|
-|`orchestrator_configuration_credentials_secure_logging`|`false`|no|Whether or not to include the sensitive Credential role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
-|`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+|`orchestrator_configuration_credentials_secure_logging`|`true`|no|Whether or not to hide the sensitive tasks of this role from the log. Defaults to `true` for this role because items contain secrets.|
+|`orchestrator_configuration_secure_logging`|unset|no|Shared across multiple roles, see above. When it is unset this role still defaults to `true`.|
 
 ### Asynchronous Retry Variables
 
@@ -130,7 +130,7 @@ orchestrator_credentials:
 
 ### Idempotence and secrets
 
-With the module default `update_secrets: true` the secret `inputs` are sent on every run, so the task reports a change every time. Set `update_secrets: false` on items whose `inputs` should only be used to create the credential; this is recommended for idempotent runs. Also set `orchestrator_configuration_secure_logging: true` (or `orchestrator_configuration_credentials_secure_logging: true`) so the secret values are kept out of the log.
+With the module default `update_secrets: true` the secret `inputs` are sent on every run, so the task reports a change every time. Set `update_secrets: false` on items whose `inputs` should only be used to create the credential; this is recommended for idempotent runs. Secure logging defaults to `true` for this role so the secret values are kept out of the log; do not set `orchestrator_configuration_secure_logging` or `orchestrator_configuration_credentials_secure_logging` to `false` with real secrets.
 
 ## Playbook Examples
 

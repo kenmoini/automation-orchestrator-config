@@ -266,3 +266,33 @@ def test_diff_masks_client_secret(fake_api):
     result = run_module(module_under_test.main, dict(BASE, configuration={"client_secret": "s3"}, _ansible_diff=True), fake_api)
     assert "s3" not in str(result["diff"])
     assert result["diff"]["after"]["configuration"]["client_secret"] == "$encrypted$"
+
+
+# ------------------------------------------------------------------ secret masking
+
+
+def test_client_secret_masked_in_invocation(fake_api, mocker):
+    """The plaintext client_secret must not appear anywhere in the result, including invocation.module_args.
+
+    The harness replaces exit_json, so this test applies what AnsibleModule._return_formatted does:
+    add ``invocation.module_args`` and run ``remove_values`` with the module's ``no_log_values``.
+    """
+    from ansible.module_utils.common.parameters import remove_values
+    from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorModule
+    from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import AnsibleExitJson
+
+    def exit_json(self, **kwargs):
+        kwargs.setdefault("changed", False)
+        kwargs["invocation"] = {"module_args": self.params}
+        raise AnsibleExitJson(remove_values(kwargs, self.no_log_values))
+
+    mocker.patch.object(OrchestratorModule, "exit_json", exit_json)
+    secret = "s3cr3t-Plaintext-Value"
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", LIST, 201, _idp())
+    params = dict(BASE, configuration=dict(CONF, client_secret=secret), test=False)
+    result = run_module(module_under_test.main, params, fake_api)
+    assert result["changed"] is True
+    assert "invocation" in result
+    assert secret not in repr(result)
+    assert result["invocation"]["module_args"]["configuration"]["client_secret"] != secret

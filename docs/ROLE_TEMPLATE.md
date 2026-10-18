@@ -40,6 +40,13 @@ orchestrator_configuration_async_dir:
 ...
 ```
 
+Rule: a role whose items may carry secrets (passwords, credential `inputs`, client secrets, one-time secrets in results,
+execution `input_data`) defaults secure logging to `true`:
+`orchestrator_configuration_<res>_secure_logging: "{{ orchestrator_configuration_secure_logging | default('true') }}"`.
+Its `meta/argument_specs.yml` default and README Secure Logging section say so ("defaults to true for this role because
+items contain secrets"). Today this applies to `orchestrator_users`, `orchestrator_credentials`,
+`orchestrator_identity_providers`, `orchestrator_service_account_credentials` and `orchestrator_execution_launch`.
+
 ## tasks/main.yml
 
 Structure: `Manage Orchestrator <Res> Block` (vars `ansible_async_dir`, `no_log` from `_secure_logging`) with

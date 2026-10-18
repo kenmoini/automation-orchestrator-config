@@ -55,7 +55,7 @@ options:
       - When both are given, V(mapped_group) takes precedence over V(mapped_group_id).
       - Write list entries exactly as the API returns them, because entries are compared as a whole (in any order).
       - V(client_secret) is sensitive. It is sent only when set and O(update_secrets=true), is never returned and is hidden from the diff.
-        Because it is a key of a dict, Ansible cannot hide it from the task arguments, so pass it from a vaulted variable.
+        The module also masks its value in the logged task arguments (C(invocation)). Still pass it from a vaulted variable.
     type: dict
   update_secrets:
     description:
@@ -200,6 +200,7 @@ test_result:
 
 import copy
 
+from ansible.module_utils.common.text.converters import to_text
 from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import (
     OrchestratorAPIError,
     OrchestratorModule,
@@ -207,6 +208,22 @@ from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_
 )
 
 IDENTITY_PROVIDERS = "/identity_providers"
+
+
+def _hide_client_secret(module, configuration):
+    """Add every non-empty ``client_secret`` in ``configuration`` (at any depth) to ``module.no_log_values``.
+
+    ``configuration`` is a plain dict option, so Ansible does not mask the secret in the logged task arguments on its own.
+    """
+    if isinstance(configuration, dict):
+        for key, value in configuration.items():
+            if key == "client_secret" and value and not isinstance(value, (dict, list)):
+                module.no_log_values.add(to_text(value))
+            else:
+                _hide_client_secret(module, value)
+    elif isinstance(configuration, list):
+        for value in configuration:
+            _hide_client_secret(module, value)
 
 
 def _group_id(module, group):
@@ -258,6 +275,7 @@ def main():
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
     module.result_key = "identity_provider"
     params = module.params
+    _hide_client_secret(module, params["configuration"])
     state = params["state"]
 
     if state == "present":
