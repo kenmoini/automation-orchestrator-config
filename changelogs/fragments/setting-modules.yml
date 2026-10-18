@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - setting - new module that changes one or several runtime settings, writing only the values that differ.
+  - setting_info - new module that lists runtime settings or settings categories.
+...
