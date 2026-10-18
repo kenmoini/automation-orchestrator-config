@@ -103,6 +103,32 @@ def test_compute_patch_secrets_included_only_when_update_secrets(fake_api):
     assert module.compute_patch(existing, nested, update_secrets=False, **kwargs) == {}
 
 
+def _idp_patch(fake_api, update_secrets):
+    existing = {"id": OID, "name": "idp", "configuration": {"issuer_url": "https://old", "client_id": "abc", "client_secret": SECRET_PLACEHOLDER}}
+    desired = {"configuration": {"issuer_url": "https://new", "client_secret": "new"}}
+    fake_api.add("PATCH", "/api/v1/identity_providers/{0}".format(OID), 200, existing)
+    module = make_module(fake_api)
+    changed, dummy = module.create_or_update(
+        existing, desired, "/identity_providers", full_fields=("configuration",), secret_fields=("client_secret",), update_secrets=update_secrets
+    )
+    return changed, fake_api.calls[-1]["body"]
+
+
+def test_full_field_drops_server_secret_when_update_secrets_false(fake_api):
+    changed, body = _idp_patch(fake_api, update_secrets=False)
+
+    assert changed is True
+    assert body == {"configuration": {"issuer_url": "https://new", "client_id": "abc"}}
+    assert "client_secret" not in body["configuration"]
+
+
+def test_full_field_sends_secret_when_update_secrets_true(fake_api):
+    changed, body = _idp_patch(fake_api, update_secrets=True)
+
+    assert changed is True
+    assert body == {"configuration": {"issuer_url": "https://new", "client_id": "abc", "client_secret": "new"}}
+
+
 # ------------------------------------------------------------ create_or_update
 
 
@@ -236,7 +262,8 @@ def test_exit_result_strips_secrets_and_sets_id(fake_api):
     result = exc.value.kwargs
     assert result["changed"] is True
     assert result["id"] == OID
-    assert result["credential"] == {"id": OID, "name": "c", "inputs": SECRET_PLACEHOLDER, "configuration": {"client_secret": SECRET_PLACEHOLDER, "client_id": "abc"}}
+    masked_configuration = {"client_secret": SECRET_PLACEHOLDER, "client_id": "abc"}
+    assert result["credential"] == {"id": OID, "name": "c", "inputs": SECRET_PLACEHOLDER, "configuration": masked_configuration}
     assert result["client_secret"] == "one-time"
     assert "diff" not in result
     assert obj == original

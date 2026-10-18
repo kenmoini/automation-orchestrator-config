@@ -508,7 +508,8 @@ class OrchestratorModule(AnsibleModule):
         """Return the partial PATCH body that turns ``existing`` into ``desired``.
 
         Secret keys are sent only when ``update_secrets``; ``full_fields`` nested dicts are sent whole
-        (``existing[key]`` updated with ``desired[key]``) when anything in them changes.
+        (``existing[key]`` updated with ``desired[key]``) when anything in them changes. Secret keys are
+        never copied from ``existing``, at the top level or inside a full-field dict.
         """
         existing = existing or {}
         patch = {}
@@ -526,7 +527,8 @@ class OrchestratorModule(AnsibleModule):
                     elif _differs(current.get(sub_key), sub_value):
                         changed = True
                 if changed:
-                    merged = copy.deepcopy(current)
+                    # Never echo server-side secret sub-keys: only caller-supplied secrets are sent, and only when update_secrets.
+                    merged = dict((k, copy.deepcopy(v)) for k, v in current.items() if k not in secret_fields)
                     for sub_key, sub_value in wanted.items():
                         if sub_key in secret_fields and not update_secrets:
                             continue
