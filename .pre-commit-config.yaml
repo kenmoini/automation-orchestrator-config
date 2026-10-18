@@ -12,7 +12,7 @@ repos:
       - id: black
         name: black
         entry: black
-        args: [--config=.black.cfg, --check, --diff]
+        args: [--config=.black.cfg, --check]
         types: [python]
 
   - repo: https://github.com/pycqa/flake8
