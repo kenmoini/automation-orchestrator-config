@@ -1,0 +1,8 @@
+---
+orchestrator_settings:
+  - name: aoc-test-setting-1
+    value: 30
+  - name: aoc-test-setting-2
+    value: true
+    expected_version: 1
+...

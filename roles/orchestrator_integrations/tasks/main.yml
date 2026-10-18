@@ -1,0 +1,97 @@
+---
+- name: Manage Orchestrator Integrations Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_integrations_secure_logging }}"
+  block:
+    - name: Managing Integrations
+      kenmoini.automation_orchestrator_config.integration:
+        name: "{{ __orchestrator_integrations_item.name | mandatory }}"
+        new_name: "{{ __orchestrator_integrations_item.new_name | default(omit, true) }}"
+        description: >-
+          {{ __orchestrator_integrations_item.description | default(('' if orchestrator_configuration_integrations_enforce_defaults else
+          omit), true) }}
+        integration_type: "{{ __orchestrator_integrations_item.integration_type | default(omit, true) }}"
+        configuration: "{{ __orchestrator_integrations_item.configuration | default(omit, true) }}"
+        management_credential: "{{ __orchestrator_integrations_item.management_credential | default(omit, true) }}"
+        management_credential_project: "{{ __orchestrator_integrations_item.management_credential_project | default(omit, true) }}"
+        enabled: "{{ __orchestrator_integrations_item.enabled | default(omit) }}"
+        scope: "{{ __orchestrator_integrations_item.scope | default(omit, true) }}"
+        labels: >-
+          {{ __orchestrator_integrations_item.labels | default(({} if orchestrator_configuration_integrations_enforce_defaults else omit),
+          true) }}
+        projects: "{{ __orchestrator_integrations_item.projects | default(omit) }}"
+        models: "{{ __orchestrator_integrations_item.models | default(omit, true) }}"
+        tools: "{{ __orchestrator_integrations_item.tools | default(omit, true) }}"
+        discover: "{{ __orchestrator_integrations_item.discover | default(omit) }}"
+        refresh: "{{ __orchestrator_integrations_item.refresh | default(omit) }}"
+        validate: "{{ __orchestrator_integrations_item.validate | default(omit) }}"
+        state: "{{ __orchestrator_integrations_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_integrations }}"
+      loop_control:
+        loop_var: __orchestrator_integrations_item
+        label: "{{ __operation.verb }} integration {{ __orchestrator_integrations_item.name }}"
+        pause: "{{ orchestrator_configuration_integrations_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_integrations_job_async
+      changed_when: (__orchestrator_integrations_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__orchestrator_integrations_item.state | default(orchestrator_state) | default('present')] }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __orchestrator_integrations_job_async.failed is defined and __orchestrator_integrations_job_async.failed
+
+    - name: Managing Orchestrator Integrations | Wait for finish the Integrations management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_integrations_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_integrations_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_integrations_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator Integration {{
+          __orchestrator_integrations_job_async_results_item.__orchestrator_integrations_item.name }} | Wait for finish the
+          integration {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_integrations_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_integrations_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_integrations_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_integrations_job_async_results_item }}"
+        cas_register_subvar: orchestrator_integrations
+        cas_error_list_var_name: "orchestrator_integrations_errors"
+        __operation: >-
+          {{ operation_translate[__orchestrator_integrations_job_async_results_item.__orchestrator_integrations_item.state |
+          default(orchestrator_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator Integration {{
+          __orchestrator_integrations_job_async_results_item.__orchestrator_integrations_item.name }} | Wait for finish the
+          integration {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_integrations_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_integrations_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_integrations_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_integrations_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_integrations_job_async_results_item.results_file | default('Unknown') }}"
+...

@@ -1,0 +1,9 @@
+---
+orchestrator_settings: []
+orchestrator_configuration_settings_secure_logging: "{{ orchestrator_configuration_secure_logging | default('false') }}"
+orchestrator_configuration_settings_async_retries: "{{ orchestrator_configuration_async_retries | default(50) }}"
+orchestrator_configuration_settings_async_delay: "{{ orchestrator_configuration_async_delay | default(1) }}"
+orchestrator_configuration_settings_loop_delay: "{{ orchestrator_configuration_loop_delay | default(0) }}"
+orchestrator_configuration_settings_enforce_defaults: "{{ orchestrator_configuration_enforce_defaults | default(false) }}"
+orchestrator_configuration_async_dir:
+...

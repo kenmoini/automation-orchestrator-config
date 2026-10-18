@@ -1,0 +1,89 @@
+---
+- name: Manage Orchestrator Identity Providers Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_identity_providers_secure_logging }}"
+  block:
+    - name: Managing Identity Providers
+      kenmoini.automation_orchestrator_config.identity_provider:
+        name: "{{ __orchestrator_identity_providers_item.name | mandatory }}"
+        new_name: "{{ __orchestrator_identity_providers_item.new_name | default(omit, true) }}"
+        description: >-
+          {{ __orchestrator_identity_providers_item.description | default(('' if
+          orchestrator_configuration_identity_providers_enforce_defaults else omit), true) }}
+        enabled: "{{ __orchestrator_identity_providers_item.enabled | default(omit) }}"
+        configuration: "{{ __orchestrator_identity_providers_item.configuration | default(omit, true) }}"
+        update_secrets: "{{ __orchestrator_identity_providers_item.update_secrets | default(omit) }}"
+        test: "{{ __orchestrator_identity_providers_item.test | default(omit) }}"
+        state: "{{ __orchestrator_identity_providers_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_identity_providers }}"
+      loop_control:
+        loop_var: __orchestrator_identity_providers_item
+        label: "{{ __operation.verb }} identity_provider {{ __orchestrator_identity_providers_item.name }}"
+        pause: "{{ orchestrator_configuration_identity_providers_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_identity_providers_job_async
+      changed_when: (__orchestrator_identity_providers_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__orchestrator_identity_providers_item.state | default(orchestrator_state) | default('present')] }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when:
+        - ansible_check_mode
+        - __orchestrator_identity_providers_job_async.failed is defined
+        - __orchestrator_identity_providers_job_async.failed
+
+    - name: Managing Orchestrator Identity Providers | Wait for finish the Identity Providers management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_identity_providers_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_identity_providers_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_identity_providers_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator Identity Provider {{
+          __orchestrator_identity_providers_job_async_results_item.__orchestrator_identity_providers_item.name }} | Wait for
+          finish the identity_provider {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_identity_providers_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_identity_providers_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_identity_providers_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_identity_providers_job_async_results_item }}"
+        cas_register_subvar: orchestrator_identity_providers
+        cas_error_list_var_name: "orchestrator_identity_providers_errors"
+        __operation: >-
+          {{ operation_translate[__orchestrator_identity_providers_job_async_results_item.__orchestrator_identity_providers_item.state |
+          default(orchestrator_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator Identity Provider {{
+          __orchestrator_identity_providers_job_async_results_item.__orchestrator_identity_providers_item.name }} | Wait for
+          finish the identity_provider {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_identity_providers_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_identity_providers_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_identity_providers_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_identity_providers_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_identity_providers_job_async_results_item.results_file | default('Unknown') }}"
+...

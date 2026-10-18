@@ -1,0 +1,94 @@
+---
+- name: Manage Orchestrator Service Account Credentials Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_service_account_credentials_secure_logging }}"
+  block:
+    - name: Managing Service Account Credentials
+      kenmoini.automation_orchestrator_config.service_account_credential:
+        service_account: "{{ __orchestrator_service_account_credentials_item.service_account | mandatory }}"
+        project: "{{ __orchestrator_service_account_credentials_item.project | default(omit, true) }}"
+        identifier: "{{ __orchestrator_service_account_credentials_item.identifier | default(omit, true) }}"
+        grace_period_seconds: "{{ __orchestrator_service_account_credentials_item.grace_period_seconds | default(omit) }}"
+        expires_at: "{{ __orchestrator_service_account_credentials_item.expires_at | default(omit, true) }}"
+        state: "{{ __orchestrator_service_account_credentials_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_service_account_credentials }}"
+      loop_control:
+        loop_var: __orchestrator_service_account_credentials_item
+        label: >-
+          {{ __operation.verb }} service_account_credential {{ __orchestrator_service_account_credentials_item.service_account }}/{{
+          __orchestrator_service_account_credentials_item.identifier | default('new') }}
+        pause: "{{ orchestrator_configuration_service_account_credentials_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_service_account_credentials_job_async
+      changed_when: (__orchestrator_service_account_credentials_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: >-
+          {{ operation_translate[__orchestrator_service_account_credentials_item.state | default(orchestrator_state) | default('present')]
+          }}
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when:
+        - ansible_check_mode
+        - __orchestrator_service_account_credentials_job_async.failed is defined
+        - __orchestrator_service_account_credentials_job_async.failed
+
+    - name: Managing Orchestrator Service Account Credentials | Wait for finish the Service Account Credentials management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_service_account_credentials_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_service_account_credentials_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_service_account_credentials_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator Service Account Credential {{
+          __orchestrator_service_account_credentials_job_async_results_item.__orchestrator_service_account_credentials_item.service_account
+          }}/{{
+          __orchestrator_service_account_credentials_job_async_results_item.__orchestrator_service_account_credentials_item.identifier
+          | default('new') }} | Wait for finish the service_account_credential {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_service_account_credentials_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_service_account_credentials_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_service_account_credentials_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_service_account_credentials_job_async_results_item }}"
+        cas_register_subvar: orchestrator_service_account_credentials
+        cas_error_list_var_name: "orchestrator_service_account_credentials_errors"
+        __operation: >-
+          {{
+          operation_translate[__orchestrator_service_account_credentials_job_async_results_item.__orchestrator_service_account_credentials_item.state
+          | default(orchestrator_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator Service Account Credential {{
+          __orchestrator_service_account_credentials_job_async_results_item.__orchestrator_service_account_credentials_item.service_account
+          }}/{{
+          __orchestrator_service_account_credentials_job_async_results_item.__orchestrator_service_account_credentials_item.identifier
+          | default('new') }} | Wait for finish the service_account_credential {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_service_account_credentials_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_service_account_credentials_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_service_account_credentials_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_service_account_credentials_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_service_account_credentials_job_async_results_item.results_file | default('Unknown') }}"
+...

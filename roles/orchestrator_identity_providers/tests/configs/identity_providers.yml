@@ -1,0 +1,24 @@
+---
+orchestrator_identity_providers:
+  - name: aoc-test-idp-1
+    description: First test identity provider
+    enabled: false
+    configuration:
+      issuer_url: https://idp.example.com
+      client_id: aoc-test
+      client_secret: changeme
+      redirect_uri: https://orchestrator.example.com/callback
+      scopes:
+        - openid
+        - profile
+    update_secrets: false
+  - name: aoc-test-idp-2
+    enabled: false
+    configuration:
+      issuer_url: https://idp2.example.com
+      client_id: aoc-test-2
+      client_secret: changeme
+      redirect_uri: https://orchestrator.example.com/callback
+    update_secrets: false
+    test: false
+...

@@ -1,0 +1,7 @@
+---
+orchestrator_groups:
+  - name: aoc-test-group-1
+    description: First test group
+  - name: aoc-test-group-2
+    description: Second test group
+...

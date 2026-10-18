@@ -1,0 +1,20 @@
+---
+- name: Add Service Account Credentials to Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    orchestrator_validate_certs: false
+    orchestrator_hostname: orchestrator.example.com
+    orchestrator_username: admin
+    orchestrator_password: changeme
+
+  pre_tasks:
+    - name: Include vars from configs directory
+      ansible.builtin.include_vars:
+        dir: ./configs
+        extensions: [yml]
+
+  roles:
+    - { role: ../.., when: orchestrator_service_account_credentials is defined }
+...

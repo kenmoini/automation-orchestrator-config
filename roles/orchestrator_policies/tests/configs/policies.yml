@@ -1,0 +1,17 @@
+---
+orchestrator_policies:
+  - name: aoc-test-policy-1
+    description: First test policy
+    statements:
+      - effect: allow
+        actions:
+          - workflow:read
+        scope: any
+  - name: aoc-test-policy-2
+    project: aoc-test-project-1
+    statements:
+      - effect: allow
+        actions:
+          - workflow:read
+        scope: project
+...

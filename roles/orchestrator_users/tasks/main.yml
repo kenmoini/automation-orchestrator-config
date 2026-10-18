@@ -1,0 +1,86 @@
+---
+- name: Manage Orchestrator Users Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_users_secure_logging }}"
+  block:
+    - name: Managing Users
+      kenmoini.automation_orchestrator_config.user:
+        username: "{{ __orchestrator_users_item.username | mandatory }}"
+        new_username: "{{ __orchestrator_users_item.new_username | default(omit, true) }}"
+        password: "{{ __orchestrator_users_item.password | default(omit, true) }}"
+        update_password: "{{ __orchestrator_users_item.update_password | default(omit, true) }}"
+        email: "{{ __orchestrator_users_item.email | default(omit, true) }}"
+        first_name: "{{ __orchestrator_users_item.first_name | default(omit, true) }}"
+        last_name: "{{ __orchestrator_users_item.last_name | default(omit, true) }}"
+        is_enabled: "{{ __orchestrator_users_item.is_enabled | default(omit) }}"
+        groups: "{{ __orchestrator_users_item.groups | default(omit) }}"
+        state: "{{ __orchestrator_users_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_users }}"
+      loop_control:
+        loop_var: __orchestrator_users_item
+        label: "{{ __operation.verb }} user {{ __orchestrator_users_item.username }}"
+        pause: "{{ orchestrator_configuration_users_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_users_job_async
+      changed_when: (__orchestrator_users_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__orchestrator_users_item.state | default(orchestrator_state) | default('present')] }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __orchestrator_users_job_async.failed is defined and __orchestrator_users_job_async.failed
+
+    - name: Managing Orchestrator Users | Wait for finish the Users management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_users_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_users_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_users_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator User {{
+          __orchestrator_users_job_async_results_item.__orchestrator_users_item.username }} | Wait for finish the user {{
+          __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_users_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_users_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_users_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_users_job_async_results_item }}"
+        cas_register_subvar: orchestrator_users
+        cas_error_list_var_name: "orchestrator_users_errors"
+        __operation: >-
+          {{ operation_translate[__orchestrator_users_job_async_results_item.__orchestrator_users_item.state | default(orchestrator_state) |
+          default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator User {{
+          __orchestrator_users_job_async_results_item.__orchestrator_users_item.username }} | Wait for finish the user {{
+          __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_users_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_users_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_users_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_users_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_users_job_async_results_item.results_file | default('Unknown') }}"
+...

@@ -1,0 +1,151 @@
+---
+argument_specs:
+  main:
+    short_description: An Ansible Role to create, update and delete Roles in Automation Orchestrator.
+    options:
+      orchestrator_roles:
+        description: Data structure describing your roles
+        type: list
+        elements: dict
+#        options:
+#          name:
+#            required: true
+#            type: str
+#            description: Name of the role.
+#          new_name:
+#            required: false
+#            type: str
+#            description: New name for the role, used to rename it.
+#          description:
+#            required: false
+#            type: str
+#            description: Description of the role.
+#          policies:
+#            required: false
+#            type: list
+#            description: Policies granted by the role, as names or UUIDs. Required to create the role.
+#          labels:
+#            required: false
+#            type: dict
+#            description: Labels (key/value pairs) to set on the role.
+#          project:
+#            required: false
+#            type: str
+#            description: Name or UUID of the project the role belongs to. Omit it for a system-scoped role. Cannot be changed on an existing role.
+#          state:
+#            default: "{{ orchestrator_state | default('present') }}"
+#            required: false
+#            type: str
+#            description: Desired state of the resource: C(present), C(absent), C(exists). Note that C(absent) permanently deletes the role.
+#          register:
+#            required: false
+#            type: str
+#            description: Variable to set based on the result of the object creation/modification.
+
+      # Async variables
+      orchestrator_configuration_roles_async_retries:
+        default: "{{ orchestrator_configuration_async_retries | default(50) }}"
+        required: false
+        description: This variable sets the number of retries to attempt for the role.
+      orchestrator_configuration_async_retries:
+        default: 50
+        required: false
+        description: This variable sets number of retries across all roles as a default.
+      orchestrator_configuration_roles_async_delay:
+        default: "{{ orchestrator_configuration_async_delay | default(1) }}"
+        required: false
+        description: This variable sets delay between retries for the role.
+      orchestrator_configuration_async_delay:
+        default: 1
+        required: false
+        description: This variable sets delay between retries across all roles as a default.
+      orchestrator_configuration_roles_loop_delay:
+        default: "{{ orchestrator_configuration_loop_delay | default(0) }}"
+        required: false
+        description: This variable sets the pause in seconds between each item in the loop for the role.
+      orchestrator_configuration_loop_delay:
+        default: 0
+        required: false
+        description: This variable sets the pause between each item in the loop across all roles as a default.
+      orchestrator_configuration_roles_enforce_defaults:
+        default: "{{ orchestrator_configuration_enforce_defaults | default(false) }}"
+        required: false
+        type: bool
+        description: Whether or not to enforce default values for optional options of this role.
+      orchestrator_configuration_enforce_defaults:
+        default: false
+        required: false
+        type: bool
+        description: This variable enables enforced default values across all roles as a default.
+      orchestrator_configuration_async_dir:
+        default: null
+        required: false
+        description: >-
+          Sets the directory to write the results file for async tasks. The default value is set to `null` which uses
+          the Ansible Default of `~/.ansible_async/`.
+
+      # No_log variables
+      orchestrator_configuration_roles_secure_logging:
+        default: "{{ orchestrator_configuration_secure_logging | default(false) }}"
+        required: false
+        type: bool
+        description: >-
+          Whether or not to include the sensitive tasks from this role in the log. Set this value to `true` if you will
+          be providing your sensitive values from elsewhere.
+      orchestrator_configuration_secure_logging:
+        default: false
+        required: false
+        type: bool
+        description: This variable enables secure logging across all roles as a default.
+
+      # Generic across all roles
+      orchestrator_state:
+        default: present
+        required: false
+        description: The state all objects will take unless overridden by object default.
+        type: str
+      orchestrator_hostname:
+        default: None
+        required: false
+        description: Hostname or URL of the Automation Orchestrator server.
+        type: str
+      orchestrator_validate_certs:
+        default: true
+        required: false
+        description: Whether or not to validate the Automation Orchestrator server's SSL certificate.
+        type: bool
+      orchestrator_username:
+        default: None
+        required: false
+        description: User on the Automation Orchestrator server. Either username / password, a token, or client ID / secret needs to be specified.
+        type: str
+      orchestrator_password:
+        default: None
+        required: false
+        description: >-
+          Password of the user on the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_token:
+        default: None
+        required: false
+        description: Token for the Automation Orchestrator server. This should be stored in an Ansible Vault or elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_client_id:
+        default: None
+        required: false
+        description: OAuth client ID for the Automation Orchestrator server, used with the client secret.
+        type: str
+      orchestrator_client_secret:
+        default: None
+        required: false
+        description: >-
+          OAuth client secret for the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_request_timeout:
+        default: 10
+        required: false
+        description: Timeout in seconds for requests to the Automation Orchestrator server.
+        type: float
+...

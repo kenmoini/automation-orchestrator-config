@@ -1,0 +1,8 @@
+---
+orchestrator_role_assignments:
+  - role: aoc-test-role-1
+    user: aoc-test-user-1
+  - role: aoc-test-role-2
+    group: aoc-test-group-1
+    project: aoc-test-project-1
+...

@@ -1,0 +1,92 @@
+---
+- name: Manage Orchestrator Workflows Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_workflows_secure_logging }}"
+  block:
+    - name: Managing Workflows
+      kenmoini.automation_orchestrator_config.workflow:
+        name: "{{ __orchestrator_workflows_item.name | mandatory }}"
+        new_name: "{{ __orchestrator_workflows_item.new_name | default(omit, true) }}"
+        description: >-
+          {{ __orchestrator_workflows_item.description | default(('' if orchestrator_configuration_workflows_enforce_defaults else omit),
+          true) }}
+        labels: "{{ __orchestrator_workflows_item.labels | default(({} if orchestrator_configuration_workflows_enforce_defaults else omit), true) }}"
+        project: "{{ __orchestrator_workflows_item.project | mandatory }}"
+        workflow_definition: >-
+          {{ __orchestrator_workflows_item.workflow_definition | default((lookup('ansible.builtin.file',
+          __orchestrator_workflows_item.definition_file) | from_yaml) if __orchestrator_workflows_item.definition_file is defined else omit)
+          }}
+        is_import: "{{ __orchestrator_workflows_item.is_import | default(omit) }}"
+        change_description: "{{ __orchestrator_workflows_item.change_description | default(omit, true) }}"
+        publish: "{{ __orchestrator_workflows_item.publish | default(omit) }}"
+        unpublish: "{{ __orchestrator_workflows_item.unpublish | default(omit) }}"
+        state: "{{ __orchestrator_workflows_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_workflows }}"
+      loop_control:
+        loop_var: __orchestrator_workflows_item
+        label: "{{ __operation.verb }} workflow {{ __orchestrator_workflows_item.name }}"
+        pause: "{{ orchestrator_configuration_workflows_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_workflows_job_async
+      changed_when: (__orchestrator_workflows_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__orchestrator_workflows_item.state | default(orchestrator_state) | default('present')] }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __orchestrator_workflows_job_async.failed is defined and __orchestrator_workflows_job_async.failed
+
+    - name: Managing Orchestrator Workflows | Wait for finish the Workflows management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_workflows_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_workflows_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_workflows_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator Workflow {{
+          __orchestrator_workflows_job_async_results_item.__orchestrator_workflows_item.name }} | Wait for finish the workflow {{
+          __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_workflows_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_workflows_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_workflows_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_workflows_job_async_results_item }}"
+        cas_register_subvar: orchestrator_workflows
+        cas_error_list_var_name: "orchestrator_workflows_errors"
+        __operation: >-
+          {{ operation_translate[__orchestrator_workflows_job_async_results_item.__orchestrator_workflows_item.state |
+          default(orchestrator_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator Workflow {{
+          __orchestrator_workflows_job_async_results_item.__orchestrator_workflows_item.name }} | Wait for finish the workflow {{
+          __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_workflows_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_workflows_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_workflows_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_workflows_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_workflows_job_async_results_item.results_file | default('Unknown') }}"
+...

@@ -1,0 +1,87 @@
+---
+- name: Manage Orchestrator Role Assignments Block
+  vars:
+    ansible_async_dir: "{{ orchestrator_configuration_async_dir }}"
+  no_log: "{{ orchestrator_configuration_role_assignments_secure_logging }}"
+  block:
+    - name: Managing Role Assignments
+      kenmoini.automation_orchestrator_config.role_assignment:
+        role: "{{ __orchestrator_role_assignments_item.role | mandatory }}"
+        user: "{{ __orchestrator_role_assignments_item.user | default(omit, true) }}"
+        group: "{{ __orchestrator_role_assignments_item.group | default(omit, true) }}"
+        project: "{{ __orchestrator_role_assignments_item.project | default(omit, true) }}"
+        state: "{{ __orchestrator_role_assignments_item.state | default(orchestrator_state | default('present')) }}"
+
+        # Role Standard Options
+        orchestrator_host: "{{ orchestrator_hostname | default(omit, true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+        orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+        orchestrator_client_id: "{{ orchestrator_client_id | default(omit, true) }}"
+        orchestrator_client_secret: "{{ orchestrator_client_secret | default(omit, true) }}"
+        validate_certs: "{{ orchestrator_validate_certs | default(omit) }}"
+        request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"
+      loop: "{{ orchestrator_role_assignments }}"
+      loop_control:
+        loop_var: __orchestrator_role_assignments_item
+        label: >-
+          {{ __operation.verb }} role_assignment {{ __orchestrator_role_assignments_item.role }} -> {{
+          __orchestrator_role_assignments_item.user | default(__orchestrator_role_assignments_item.group) }}
+        pause: "{{ orchestrator_configuration_role_assignments_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __orchestrator_role_assignments_job_async
+      changed_when: (__orchestrator_role_assignments_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__orchestrator_role_assignments_item.state | default(orchestrator_state) | default('present')] }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __orchestrator_role_assignments_job_async.failed is defined and __orchestrator_role_assignments_job_async.failed
+
+    - name: Managing Orchestrator Role Assignments | Wait for finish the Role Assignments management
+      when:
+        - not ansible_check_mode
+        - __orchestrator_role_assignments_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.collect_async_status
+      loop: "{{ __orchestrator_role_assignments_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_role_assignments_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Orchestrator Role Assignment {{
+          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.role }} -> {{
+          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.user |
+          default(__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.group) }} | Wait for
+          finish the role_assignment {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ orchestrator_configuration_role_assignments_secure_logging }}"
+        cas_async_delay: "{{ orchestrator_configuration_role_assignments_async_delay }}"
+        cas_async_retries: "{{ orchestrator_configuration_role_assignments_async_retries }}"
+        cas_job_async_results_item: "{{ __orchestrator_role_assignments_job_async_results_item }}"
+        cas_register_subvar: orchestrator_role_assignments
+        cas_error_list_var_name: "orchestrator_role_assignments_errors"
+        __operation: >-
+          {{ operation_translate[__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.state |
+          default(orchestrator_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Orchestrator Role Assignment {{
+          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.role }} -> {{
+          __orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.user |
+          default(__orchestrator_role_assignments_job_async_results_item.__orchestrator_role_assignments_item.group) }} | Wait for
+          finish the role_assignment {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __orchestrator_role_assignments_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __orchestrator_role_assignments_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __orchestrator_role_assignments_job_async.results }}"
+      loop_control:
+        loop_var: __orchestrator_role_assignments_job_async_results_item
+        label: "Cleaning up job results file: {{ __orchestrator_role_assignments_job_async_results_item.results_file | default('Unknown') }}"
+...

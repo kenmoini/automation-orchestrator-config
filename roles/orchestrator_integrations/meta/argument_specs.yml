@@ -1,0 +1,197 @@
+---
+argument_specs:
+  main:
+    short_description: An Ansible Role to create, update and delete Integrations in Automation Orchestrator.
+    options:
+      orchestrator_integrations:
+        description: Data structure describing your integrations
+        type: list
+        elements: dict
+#        options:
+#          name:
+#            required: true
+#            type: str
+#            description: Name of the integration.
+#          new_name:
+#            required: false
+#            type: str
+#            description: New name for the integration, used to rename it.
+#          description:
+#            required: false
+#            type: str
+#            description: Description of the integration.
+#          integration_type:
+#            required: false
+#            type: str
+#            description: Type of the integration: mcp_server, llm_provider or ansible_automation_platform. Required to create an integration.
+#          configuration:
+#            required: false
+#            type: dict
+#            description: >-
+#              Connection settings of the integration, such as base_url, allow_http, insecure_skip_tls_verify, ca_certificate and, for LLM
+#              providers, provider_hint.
+#          management_credential:
+#            required: false
+#            type: str
+#            description: Name or ID of the credential used to connect to the integration.
+#          management_credential_project:
+#            required: false
+#            type: str
+#            description: Name or ID of the project that owns management_credential. Required when it is a name.
+#          enabled:
+#            required: false
+#            type: bool
+#            description: Whether the integration is enabled.
+#          scope:
+#            required: false
+#            type: str
+#            description: global (available to all projects) or project (only the assigned projects).
+#          labels:
+#            required: false
+#            type: dict
+#            description: Labels (key/value pairs) to set on the integration.
+#          projects:
+#            required: false
+#            type: list
+#            description: >-
+#              Names or IDs of the projects the integration is assigned to. When set the assignments are made to match; an empty list
+#              removes all.
+#          models:
+#            required: false
+#            type: list
+#            description: >-
+#              Models of an LLM provider integration to enable, disable or make the default (dicts with name or model_id, enabled,
+#              is_default).
+#          tools:
+#            required: false
+#            type: list
+#            description: Tools of an MCP server integration to enable or disable (dicts with name and enabled).
+#          discover:
+#            required: false
+#            type: bool
+#            description: Discover models or tools on the provider before creating the integration (module default true).
+#          refresh:
+#            required: false
+#            type: bool
+#            description: Fetch the current models or tools from the provider after the integration is created or updated.
+#          validate:
+#            required: false
+#            type: bool
+#            description: Test the connection to the integration at the end of the task.
+#          state:
+#            default: "{{ orchestrator_state | default('present') }}"
+#            required: false
+#            type: str
+#            description: Desired state of the resource: C(present), C(absent), C(exists). Note that C(absent) permanently deletes the integration.
+#          register:
+#            required: false
+#            type: str
+#            description: Variable to set based on the result of the object creation/modification.
+
+      # Async variables
+      orchestrator_configuration_integrations_async_retries:
+        default: "{{ orchestrator_configuration_async_retries | default(50) }}"
+        required: false
+        description: This variable sets the number of retries to attempt for the role.
+      orchestrator_configuration_async_retries:
+        default: 50
+        required: false
+        description: This variable sets number of retries across all roles as a default.
+      orchestrator_configuration_integrations_async_delay:
+        default: "{{ orchestrator_configuration_async_delay | default(1) }}"
+        required: false
+        description: This variable sets delay between retries for the role.
+      orchestrator_configuration_async_delay:
+        default: 1
+        required: false
+        description: This variable sets delay between retries across all roles as a default.
+      orchestrator_configuration_integrations_loop_delay:
+        default: "{{ orchestrator_configuration_loop_delay | default(0) }}"
+        required: false
+        description: This variable sets the pause in seconds between each item in the loop for the role.
+      orchestrator_configuration_loop_delay:
+        default: 0
+        required: false
+        description: This variable sets the pause between each item in the loop across all roles as a default.
+      orchestrator_configuration_integrations_enforce_defaults:
+        default: "{{ orchestrator_configuration_enforce_defaults | default(false) }}"
+        required: false
+        type: bool
+        description: Whether or not to enforce default values for optional options of this role.
+      orchestrator_configuration_enforce_defaults:
+        default: false
+        required: false
+        type: bool
+        description: This variable enables enforced default values across all roles as a default.
+      orchestrator_configuration_async_dir:
+        default: null
+        required: false
+        description: >-
+          Sets the directory to write the results file for async tasks. The default value is set to `null` which uses
+          the Ansible Default of `~/.ansible_async/`.
+
+      # No_log variables
+      orchestrator_configuration_integrations_secure_logging:
+        default: "{{ orchestrator_configuration_secure_logging | default(false) }}"
+        required: false
+        type: bool
+        description: >-
+          Whether or not to include the sensitive tasks from this role in the log. Set this value to `true` if you will
+          be providing your sensitive values from elsewhere.
+      orchestrator_configuration_secure_logging:
+        default: false
+        required: false
+        type: bool
+        description: This variable enables secure logging across all roles as a default.
+
+      # Generic across all roles
+      orchestrator_state:
+        default: present
+        required: false
+        description: The state all objects will take unless overridden by object default.
+        type: str
+      orchestrator_hostname:
+        default: None
+        required: false
+        description: Hostname or URL of the Automation Orchestrator server.
+        type: str
+      orchestrator_validate_certs:
+        default: true
+        required: false
+        description: Whether or not to validate the Automation Orchestrator server's SSL certificate.
+        type: bool
+      orchestrator_username:
+        default: None
+        required: false
+        description: User on the Automation Orchestrator server. Either username / password, a token, or client ID / secret needs to be specified.
+        type: str
+      orchestrator_password:
+        default: None
+        required: false
+        description: >-
+          Password of the user on the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_token:
+        default: None
+        required: false
+        description: Token for the Automation Orchestrator server. This should be stored in an Ansible Vault or elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_client_id:
+        default: None
+        required: false
+        description: OAuth client ID for the Automation Orchestrator server, used with the client secret.
+        type: str
+      orchestrator_client_secret:
+        default: None
+        required: false
+        description: >-
+          OAuth client secret for the Automation Orchestrator server. This should be stored in an Ansible Vault or
+          elsewhere and called from a parent playbook.
+        type: str
+      orchestrator_request_timeout:
+        default: 10
+        required: false
+        description: Timeout in seconds for requests to the Automation Orchestrator server.
+        type: float
+...

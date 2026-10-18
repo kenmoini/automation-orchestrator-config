@@ -1,0 +1,205 @@
+# kenmoini.automation_orchestrator_config.orchestrator_workflows
+
+## Description
+
+An Ansible Role to create, update and delete Workflows in Automation Orchestrator.
+Note that `state: absent` permanently deletes the workflow and its versions; it cannot be recovered.
+
+## Requirements
+
+The `kenmoini.automation_orchestrator_config` collection must be installed.
+
+## Variables
+
+|Variable Name|Default Value|Required|Description|Example|
+|:---|:---:|:---:|:---|:---|
+|`orchestrator_state`|"present"|no|The state all objects will take unless overridden by object default|'absent'|
+|`orchestrator_hostname`|""|yes|Hostname or URL of the Automation Orchestrator server.|orchestrator.example.com|
+|`orchestrator_validate_certs`|`true`|no|Whether or not to validate the Automation Orchestrator server's SSL certificate.||
+|`orchestrator_username`|""|no|User on the Automation Orchestrator server. Either username / password, a token, or client ID / secret needs to be specified.||
+|`orchestrator_password`|""|no|Password of the user on the server. This should be stored in an Ansible Vault or elsewhere and called from a parent playbook.||
+|`orchestrator_token`|""|no|Token for the Automation Orchestrator server. This should be stored in an Ansible Vault or elsewhere and called from a parent playbook.||
+|`orchestrator_client_id`|""|no|OAuth client ID for the Automation Orchestrator server, used with the client secret.||
+|`orchestrator_client_secret`|""|no|OAuth client secret for the Automation Orchestrator server. This should be stored in an Ansible Vault or elsewhere.||
+|`orchestrator_request_timeout`|`10`|no|Timeout in seconds for requests to the Automation Orchestrator server.||
+|`orchestrator_configuration_collect_logs`|`false`|no|Specify whether to collect async results and continue for all failed async tasks instead of failing on the first error. Collected results are available in the `orchestrator_configuration_role_errors` variable.||
+|`orchestrator_configuration_register`|""|no|Specify a variable to register the values of all orchestrator configuration tasks. This will create an object with each object type as an element containing a list of each item created.||
+|`orchestrator_workflows`|`see below`|yes|Data structure describing your workflow items. Described below.||
+
+### Enforcing defaults
+
+The following Variables complement each other.
+If both variables are not set, enforcing default values is not done.
+Enabling these variables enforces default values on options that are optional in the Orchestrator API.
+This should be enabled to enforce configuration and prevent configuration drift. It is recommended to be enabled, however it is not enforced by default.
+
+Enabling this will enforce configuration without specifying every option in the configuration files.
+
+`orchestrator_configuration_workflows_enforce_defaults` defaults to the value of `orchestrator_configuration_enforce_defaults` if it is not explicitly called. This allows for enforced defaults to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
+
+|Variable Name|Default Value|Required|Description|
+|:---:|:---:|:---:|:---:|
+|`orchestrator_configuration_workflows_enforce_defaults`|`false`|no|Whether or not to enforce default option values on only the workflows role|
+|`orchestrator_configuration_enforce_defaults`|`false`|no|This variable enables enforced default values as well, but is shared across multiple roles, see above.|
+
+### Secure Logging Variables
+
+The following Variables complement each other.
+If both variables are not set, secure logging defaults to false.
+The role defaults to false as normally the workflow task does not include sensitive information.
+`orchestrator_configuration_workflows_secure_logging` defaults to the value of `orchestrator_configuration_secure_logging` if it is not explicitly called. This allows for secure logging to be toggled for the entire suite of configuration roles with a single variable, or for the user to selectively use it.
+
+|Variable Name|Default Value|Required|Description|
+|:---:|:---:|:---:|:---:|
+|`orchestrator_configuration_workflows_secure_logging`|`false`|no|Whether or not to include the sensitive Workflow role tasks in the log. Set this value to `true` if you will be providing your sensitive values from elsewhere.|
+|`orchestrator_configuration_secure_logging`|`false`|no|This variable enables secure logging as well, but is shared across multiple roles, see above.|
+
+### Asynchronous Retry Variables
+
+The following Variables set asynchronous retries for the role.
+If neither of the retries or delay or retries are set, they will default to their respective defaults.
+This allows for all items to be created, then checked that the task finishes successfully.
+This also speeds up the overall role.
+
+|Variable Name|Default Value|Required|Description|
+|:---:|:---:|:---:|:---:|
+|`orchestrator_configuration_async_retries`|50|no|This variable sets the number of retries to attempt for the role globally.|
+|`orchestrator_configuration_workflows_async_retries`|`{{ orchestrator_configuration_async_retries }}`|no|This variable sets the number of retries to attempt for the role.|
+|`orchestrator_configuration_async_delay`|1|no|This sets the delay between retries for the role globally.|
+|`orchestrator_configuration_workflows_async_delay`|`orchestrator_configuration_async_delay`|no|This sets the delay between retries for the role.|
+|`orchestrator_configuration_loop_delay`|0|no|This sets the pause between each item in the loop for the roles globally. To help when API is getting overloaded.|
+|`orchestrator_configuration_workflows_loop_delay`|`orchestrator_configuration_loop_delay`|no|This sets the pause between each item in the loop for the role. To help when API is getting overloaded.|
+|`orchestrator_configuration_async_dir`|`null`|no|Sets the directory to write the results file for async tasks. The default value is set to `null` which uses the Ansible Default of `~/.ansible_async/`.|
+
+## Workflow Data Structure
+
+Provide the definition inline as `workflow_definition`, or point `definition_file` to a JSON or YAML file. The file is read on the controller by the role (JSON is valid YAML) and passed to the module as `workflow_definition`; `definition_file` itself is not passed to the module. Relative paths of `definition_file` resolve from the playbook directory. `workflow_definition` takes precedence when both are set.
+
+### Workflow Variables
+
+|Variable Name|Default Value|Required|Type|Description|
+|:---:|:---:|:---:|:---:|:---:|
+|`name`|""|yes|str|Name of the workflow.|
+|`new_name`|""|no|str|New name for the workflow, used to rename it.|
+|`description`|""|no|str|Description of the workflow.|
+|`labels`|`{}`|no|dict|Labels (key/value pairs) to set on the workflow.|
+|`project`|""|yes|str|Name or ID of the project that owns the workflow. Cannot be changed on an existing workflow.|
+|`workflow_definition`|`{}`|no|dict|The workflow definition (`triggers`, `nodes`, `edges`). Required to create a workflow.|
+|`definition_file`|""|no|path|Path to a JSON or YAML file with the workflow definition, read on the controller. Used when `workflow_definition` is not set.|
+|`is_import`|""|no|bool|Mark the workflow as imported when it is created.|
+|`change_description`|""|no|str|Description of the change, recorded on the new version and on publishing.|
+|`publish`|""|no|bool|Publish the current version after any update. Mutually exclusive with `unpublish`.|
+|`unpublish`|""|no|bool|Unpublish the workflow when it has a published version. Mutually exclusive with `publish`.|
+|`state`|`present`|no|str|Desired state of the resource: `present`, `absent`, `exists` (`absent` is permanent).|
+|`register`|""|no|str|Variable to set based on the result of the object creation/modification.|
+
+### Yaml Example
+
+```yaml
+---
+orchestrator_workflows:
+  - name: nightly-cleanup
+    description: Nightly cleanup
+    project: Platform Team
+    workflow_definition:
+      schema_version: 2.0.0
+      name: nightly-cleanup
+      triggers:
+        - id: trigger-1
+          type: manual
+      nodes:
+        - id: node-1
+          type: wait
+          parameters:
+            duration: 1
+      edges:
+        - source: trigger-1
+          target: node-1
+    publish: true
+  - name: from-file
+    project: Platform Team
+    definition_file: files/from-file.json
+  - name: old-workflow
+    project: Platform Team
+    state: absent
+```
+
+### Json Example
+
+```json
+{
+  "orchestrator_workflows": [
+    {
+      "name": "nightly-cleanup",
+      "description": "Nightly cleanup",
+      "project": "Platform Team",
+      "workflow_definition": {
+        "schema_version": "2.0.0",
+        "name": "nightly-cleanup",
+        "triggers": [
+          {
+            "id": "trigger-1",
+            "type": "manual"
+          }
+        ],
+        "nodes": [
+          {
+            "id": "node-1",
+            "type": "wait",
+            "parameters": {
+              "duration": 1
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "trigger-1",
+            "target": "node-1"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "name": "from-file",
+      "project": "Platform Team",
+      "definition_file": "files/from-file.json"
+    },
+    {
+      "name": "old-workflow",
+      "project": "Platform Team",
+      "state": "absent"
+    }
+  ]
+}
+```
+
+## Playbook Examples
+
+### Standard Role Usage
+
+```yaml
+---
+- name: Playbook to configure Automation Orchestrator
+  hosts: localhost
+  connection: local
+  # Define following vars here, or in a vars file
+  # orchestrator_hostname: orchestrator.example.com
+  # orchestrator_username: admin
+  # orchestrator_password: changeme
+  pre_tasks:
+    - name: Include vars from orchestrator_configs directory
+      ansible.builtin.include_vars:
+        dir: ./orchestrator_configs
+        extensions: ["yml"]
+  roles:
+    - {role: kenmoini.automation_orchestrator_config.orchestrator_workflows, when: orchestrator_workflows is defined}
+```
+
+## License
+
+[GPLv3+](https://github.com/kenmoini/automation_orchestrator_configuration/blob/main/LICENSE)
+
+## Author
+
+[Ken Moini](https://github.com/kenmoini)
