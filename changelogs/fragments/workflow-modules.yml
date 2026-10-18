@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - workflow - new module that creates, updates, renames and deletes workflows from inline or file-based definitions, creates a new version only when the definition changes, and can publish or unpublish them.
+  - workflow_info - new module that lists the workflows of a project or gets one by ID, optionally with the current or a given version's definition and the version history.
+...
