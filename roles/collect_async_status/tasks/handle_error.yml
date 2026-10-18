@@ -76,6 +76,15 @@
           {{ __cas_job_async_item
           | combine({ 'service_account': cas_job_async_results_item[__cas_job_async_item_loop_var]['service_account'] }) }}
 
+    - name: handle_error | Check item for identifier
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["identifier"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["identifier"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: >-
+          {{ __cas_job_async_item
+          | combine({ 'identifier': cas_job_async_results_item[__cas_job_async_item_loop_var]['identifier'] }) }}
+
     - name: handle_error | Check item for key
       when:
         - cas_job_async_results_item[__cas_job_async_item_loop_var]["key"] is defined
@@ -107,5 +116,6 @@
           user: "{{ __cas_job_async_item['user'] | default(omit) }}"
           group: "{{ __cas_job_async_item['group'] | default(omit) }}"
           service_account: "{{ __cas_job_async_item['service_account'] | default(omit) }}"
+          identifier: "{{ __cas_job_async_item['identifier'] | default(omit) }}"
           key: "{{ __cas_job_async_item['key'] | default(omit) }}"
 ...

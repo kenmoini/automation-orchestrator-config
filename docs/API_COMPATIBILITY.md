@@ -1,6 +1,6 @@
 # API compatibility
 
-Tested against Automation Orchestrator API 1.3.1 (OpenAPI title "Syntara API"); spec snapshot in `docs/api/openapi-1.3.1.json`.
+Built against the Automation Orchestrator API 1.3.1 OpenAPI snapshot (`docs/api/openapi-1.3.1.json`, OpenAPI title "Syntara API"); NOT yet verified against a live instance — every row below is unverified until the first live run.
 
 Automation Orchestrator is a tech preview. The table lists behaviors the collection assumes that have not yet been verified against a live instance. Each is to be confirmed on the first live run (`make live`) and this page updated with the result.
 

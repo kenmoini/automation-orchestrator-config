@@ -23,7 +23,8 @@ When reviewing pull requests to this collection, verify the following:
 - `meta/main.yml` declares the dependency on `global_vars`.
 - `defaults/main.yml` initializes the resource list to `[]` and includes the standard variables for secure logging, async retries, async delay, loop delay, enforce defaults and `orchestrator_configuration_async_dir`.
 - Role names use the `orchestrator_` prefix.
-- The identifying key (not always `name`) is used in the module task, loop label and README, and is captured by `collect_async_status`.
+- The identifying key (not always `name`) is used in the module task, loop label and README, and is captured by `collect_async_status/tasks/handle_error.yml` (`name`, `username`, `project`, `workflow`, `role`, `user`, `group`, `service_account`, `identifier`, `key`); a new key must be added there
+- Roles whose items may carry secrets (users, credentials, identity providers, service account credentials, execution launch) default secure logging to `true`; flag any such role defaulting to `false`
 
 ### Async Task Pattern
 

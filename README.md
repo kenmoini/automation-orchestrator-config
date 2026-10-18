@@ -90,7 +90,7 @@ See [playbooks/README.md](playbooks/README.md) and the [dispatch role](roles/dis
 - Secret values (credential `inputs`, identity provider `client_secret`) are write-only in the API. With `update_secrets: true` (the default) an item that supplies them is sent on every run and reports changed. Set `update_secrets: false` on an item once it is in place to make runs idempotent.
 - User passwords use `update_password: on_create` by default, so an existing user is not touched. `update_password: always` resets the password on every run.
 - A service account `client_secret` is shown once, by the run that creates (or rotates) it. `register` the result and store the secret outside Ansible.
-- Set `orchestrator_configuration_secure_logging: true` (or a per-role `orchestrator_configuration_<role>_secure_logging`) to hide task output for roles that handle secrets. Keep passwords and secrets in Ansible Vault.
+- Roles whose items carry secrets (`orchestrator_users`, `orchestrator_credentials`, `orchestrator_identity_providers`, `orchestrator_service_account_credentials`, `orchestrator_execution_launch`) hide their task output by default (secure logging defaults to `true`); the other roles default to `false`. `orchestrator_configuration_secure_logging` sets all roles at once, and a per-role `orchestrator_configuration_<role>_secure_logging` overrides it. Keep passwords and secrets in Ansible Vault.
 
 ## Error handling
 
@@ -163,7 +163,7 @@ Set `orchestrator_configuration_register` to a variable name and the results of 
 
 ## Known limitations
 
-- Automation Orchestrator is a tech preview and its API may change. Behaviors the collection assumes but has not yet confirmed against a live instance are tracked in [docs/API_COMPATIBILITY.md](docs/API_COMPATIBILITY.md).
+- Automation Orchestrator is a tech preview and its API may change. The collection is built against the API 1.3.1 OpenAPI snapshot (`docs/api/openapi-1.3.1.json`) and has NOT yet been verified against a live instance; every behavior in [docs/API_COMPATIBILITY.md](docs/API_COMPATIBILITY.md) is unverified until the first live run.
 - Some API list endpoints have no name filter, so lookups for workflows, credentials, groups, integrations and identity providers page through results client-side.
 
 ## Development

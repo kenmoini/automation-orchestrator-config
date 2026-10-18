@@ -20,7 +20,7 @@ It depends on the `global_vars` role of this collection.
 
 When errors are collected, each entry in `orchestrator_configuration_role_errors[cas_error_list_var_name]` holds the
 `ERROR_MESSAGE` and, where present on the failed item, its `name`, `username`, `project`, `workflow`, `role`, `user`,
-`group`, `service_account` and `key`.
+`group`, `service_account`, `identifier` and `key`.
 
 ### Secure Logging Variables
 

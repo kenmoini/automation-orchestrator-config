@@ -235,7 +235,7 @@ With this set, a failing item no longer stops the run; failures are collected in
 1. Keep the configuration in version control; encrypt secrets with Ansible Vault.
 2. Start small and preview with `--check --diff`.
 3. Set `update_secrets: false` on credentials once created so runs are idempotent.
-4. Use `orchestrator_configuration_secure_logging: true` when handling secrets.
+4. Keep secure logging on when handling secrets. The secret-bearing roles (users, credentials, identity providers, service account credentials, execution launch) default to `true`; do not set `orchestrator_configuration_secure_logging: false` with real secrets.
 5. `state: absent` deletes permanently; test in a lab first.
 
 ## Troubleshooting
