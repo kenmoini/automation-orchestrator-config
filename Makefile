@@ -53,8 +53,10 @@ build:
 	mkdir -p build .ansible/tmp
 	.venv/bin/ansible-galaxy collection build --force --output-path build/
 
+# Install into build/install, not build/ansible_collections: that path holds the `make link` symlink
+# to this work tree, and installing over it would overwrite the sources.
 install: build
-	.venv/bin/ansible-galaxy collection install --force build/kenmoini-automation_orchestrator_config-*.tar.gz
+	.venv/bin/ansible-galaxy collection install --force -p $(CURDIR)/build/install build/kenmoini-automation_orchestrator_config-*.tar.gz
 
 changelog:
 	.venv/bin/antsibull-changelog lint

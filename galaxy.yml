@@ -25,4 +25,12 @@ build_ignore:
   - "*.tar.gz"
   - .pre-commit-config.yaml
   - Makefile
+  - .superpowers
+  - .ansible
+  - .claude
+  - tests/output
+  - orchestrator_exports
+  - .pytest_cache
+  - "**/__pycache__"
+  - "*.pyc"
 ...

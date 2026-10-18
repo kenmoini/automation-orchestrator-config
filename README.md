@@ -175,7 +175,7 @@ make pytest        # unit tests with plain pytest
 make sanity        # ansible-test sanity
 make unit          # ansible-test units
 make build         # build the collection tarball into build/
-make install       # build and install the tarball
+make install       # build and install the tarball into build/install
 make live          # apply tests/configs to a lab instance (needs tests/auth.yml, never committed)
 make live-check    # the same in check mode with a diff
 make live-cleanup  # remove the aoc-test-* objects

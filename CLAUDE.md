@@ -82,7 +82,7 @@ See `docs/STANDARDS.md`.
 - `make lint`: all pre-commit hooks.
 - `make pytest`: unit tests with plain pytest on a synced copy; the in-sandbox runner.
 - `make sanity` / `make unit`: `ansible-test` sanity and unit tests; need ansible-test to write to `/tmp`, so they run in CI in restricted sandboxes.
-- `make build`, `make install`: build the tarball into `build/` and install it.
+- `make build`, `make install`: build the tarball into `build/` and install it into `build/install` (never into the `make link` symlink path).
 - `make live`, `make live-check`, `make live-cleanup`: apply, preview and remove `tests/configs` against a lab (see below).
 - `make changelog`: lint changelog fragments.
 
