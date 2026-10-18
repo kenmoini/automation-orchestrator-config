@@ -13,6 +13,7 @@ import json
 from unittest import mock
 from urllib.parse import parse_qsl, urlparse
 
+import pytest
 from ansible.module_utils import basic
 
 try:
@@ -166,3 +167,34 @@ def make_module(fake_api=None, argument_spec=None, supports_check_mode=False, **
     module.exit_json = lambda **kw: _exit_json(module, **kw)
     module.fail_json = lambda **kw: _fail_json(module, **kw)
     return module
+
+
+@pytest.fixture
+def fake_api(mocker):
+    """Patch ``fetch_url`` with a FakeAPI; conftest files import this fixture so every test directory shares it."""
+    api = FakeAPI()
+    mocker.patch(FETCH_URL_TARGET, new=api)
+    return api
+
+
+def run_module(module_main, params, fake_api=None):
+    """Run a module's ``main()`` with ``params`` and return the ``exit_json`` kwargs.
+
+    Default host and token are supplied unless ``params`` sets its own auth. ``fail_json`` propagates
+    as AnsibleFailJson whose ``args[0]`` is the kwargs dict (with ``failed=True``).
+    """
+    args = {"orchestrator_host": DEFAULT_HOST}
+    if not any(params.get(k) is not None for k in ("orchestrator_token", "orchestrator_username", "orchestrator_client_id")):
+        args["orchestrator_token"] = DEFAULT_TOKEN
+    args.update(params)
+    args = {k: v for k, v in args.items() if v is not None}
+    with contextlib.ExitStack() as stack:
+        if fake_api is not None:
+            stack.enter_context(mock.patch(FETCH_URL_TARGET, new=fake_api))
+        stack.enter_context(module_args(args))
+        stack.enter_context(patched_exits())
+        try:
+            module_main()
+        except AnsibleExitJson as exc:
+            return exc.args[0]
+    raise AssertionError("module did not call exit_json or fail_json")

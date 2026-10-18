@@ -201,3 +201,14 @@ def test_env_fallback_for_host_and_token(fake_api, monkeypatch):
     assert module.base_url == "https://env-orch.example.com"
     module.request("GET", "/version")
     assert fake_api.calls[0]["headers"]["Authorization"] == "Bearer envtok"
+
+
+def test_last_status_records_final_response_status(fake_api):
+    fake_api.add("GET", "/api/v1/version", 200, VERSION)
+    fake_api.add("DELETE", "/api/v1/workflows/w1", 204)
+    module = make_module(fake_api)
+    assert module.last_status is None
+    module.request("GET", "/version")
+    assert module.last_status == 200
+    module.request("DELETE", "/workflows/w1")
+    assert module.last_status == 204

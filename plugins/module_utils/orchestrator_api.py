@@ -238,6 +238,8 @@ class OrchestratorModule(AnsibleModule):
             self.fail_json(msg=to_text(exc))
         self.headers = {"Content-Type": "application/json", "Accept": "application/json"}
         self._token = None
+        self._token_expires_in = None
+        self.last_status = None
         self._authenticated = False
         self.result_key = "object"
         # AnsibleModule keeps the diff-mode flag in ``_diff``; keep the flag in ``_diff_mode`` and use
@@ -250,6 +252,7 @@ class OrchestratorModule(AnsibleModule):
     def authenticate(self):
         """Obtain a bearer token (static token > client credentials > username/password) and store it."""
         self.headers.pop("Authorization", None)
+        self._token_expires_in = None
         params = self.params
         if params.get("orchestrator_token"):
             token = params["orchestrator_token"]
@@ -280,6 +283,7 @@ class OrchestratorModule(AnsibleModule):
             self.fail_api(err, "Authentication against {0}{1} failed".format(API_PREFIX, path))
         if not isinstance(body, dict) or not body.get("access_token"):
             self.fail_json(msg="Authentication response from {0}{1} did not contain an access_token".format(API_PREFIX, path))
+        self._token_expires_in = body.get("expires_in")
         return body["access_token"]
 
     def _can_reauthenticate(self):
@@ -332,6 +336,7 @@ class OrchestratorModule(AnsibleModule):
         attempts = 0
         while True:
             status, body, info = self._send(method, url, data=data, form=form)
+            self.last_status = status
             if status in expect:
                 return None if status == 204 else body
             if status == 429 and attempts < MAX_RATE_LIMIT_RETRIES:
@@ -343,6 +348,7 @@ class OrchestratorModule(AnsibleModule):
     def request(self, method, path, query=None, data=None, form=None, expect=None):
         """Call ``API_PREFIX + path`` with bearer auth; return parsed JSON (``None`` for 204).
 
+        The HTTP status of the final response is kept in ``self.last_status``.
         Re-authenticates once on 401 when credentials allow it, retries 429 per ``Retry-After``
         and raises OrchestratorAPIError for any other unexpected status.
         """
