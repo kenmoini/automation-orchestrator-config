@@ -55,6 +55,7 @@ Minor Changes
 - project_info - new module that lists projects with optional name, default and built-in filters.
 - role - new module that creates, updates, renames and deletes system and project roles.
 - role_assignment - new module that grants and revokes roles for users and groups, globally or within a project.
+- role_assignment, role_assignment_info and orchestrator_role_assignments role - support service account principals with the new ``service_account`` option.
 - role_assignment_info - new module that lists role assignments with optional role, user, group, project, scope and principal type filters.
 - role_info - new module that lists roles with optional name, project, built-in, scope and policy filters.
 - service_account - new module that manages service accounts, including enabling and disabling them.
@@ -67,6 +68,17 @@ Minor Changes
 - user_info - new module that lists users with optional username, name, auth type and auth source filters.
 - workflow - new module that creates, updates, renames and deletes workflows from inline or file-based definitions, creates a new version only when the definition changes, and can publish or unpublish them.
 - workflow_info - new module that lists the workflows of a project or gets one by ID, optionally with the current or a given version's definition and the version history.
+
+Bugfixes
+--------
+
+- collection build - exclude ``.superpowers``, ``.ansible``, ``.claude``, ``tests/output``, ``orchestrator_exports``, ``.pytest_cache`` and ``__pycache__`` from the built tarball.
+- configure_orchestrator playbook and orchestrator_workflows role - a relative ``orchestrator_configs_dir`` and a relative ``definition_file`` resolve against the current working directory (``definition_file`` against ``orchestrator_configs_dir``) instead of the installed playbook directory.
+- dispatch - run ``orchestrator_groups`` before ``orchestrator_identity_providers`` and ``orchestrator_service_accounts`` before ``orchestrator_role_assignments`` so that group mappings and service account principals resolve.
+- identity_provider - mask ``configuration.client_secret`` in the logged module arguments (``invocation``); the ``orchestrator_users``, ``orchestrator_credentials``, ``orchestrator_identity_providers``, ``orchestrator_service_account_credentials`` and ``orchestrator_execution_launch`` roles now default secure logging to ``true``.
+- module_utils - ``get_all``, ``get_one_by_name`` and ``find_existing`` fail the task with the API status, code and body instead of crashing with a traceback when a lookup request returns an error.
+- module_utils - a token no longer conflicts with username/password or client credentials (for example from ``ORCHESTRATOR_USERNAME``/``ORCHESTRATOR_PASSWORD``); the precedence token, client credentials, username/password is applied.
+- user and service_account_credential - follow pagination when reading group memberships and service account credentials.
 
 New Modules
 -----------
