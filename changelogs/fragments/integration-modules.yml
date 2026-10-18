@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - integration - new module that creates, updates, renames and deletes integrations, assigns them to projects, toggles their models and tools, and can discover, refresh and validate them.
+  - integration_info - new module that lists integrations with optional name, type, enabled, scope and project filters, optionally with their models and tools.
+...
