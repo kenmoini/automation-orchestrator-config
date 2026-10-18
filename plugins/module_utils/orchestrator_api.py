@@ -6,13 +6,14 @@
 
 Provides authentication (static token, OAuth2 client credentials, username/password login),
 a JSON HTTP client on top of ``fetch_url``, RFC 9457 problem-details error handling,
-cursor pagination and name -> UUID resolution.
+cursor pagination, name -> UUID resolution and idempotent create/update/delete helpers.
 """
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import copy
 import json
 import time
 import uuid
@@ -32,6 +33,8 @@ MAX_RATE_LIMIT_RETRIES = 3
 DEFAULT_RETRY_AFTER = 1.0
 MAX_RETRY_AFTER = 30.0
 PAGE_LIMIT = 100
+SECRET_PLACEHOLDER = "$encrypted$"
+DEFAULT_SECRET_FIELDS = ("inputs", "client_secret", "password")
 
 # List path -> server-side query parameter that filters by name. Matches are still exact-checked client-side.
 SERVER_NAME_FILTERS = {
@@ -157,6 +160,62 @@ def _in_project(project_id):
     return predicate
 
 
+def strip_secrets(obj, secret_fields=DEFAULT_SECRET_FIELDS):
+    """Return a deep copy of ``obj`` with ``secret_fields`` (top level and in ``configuration``) masked."""
+    if not isinstance(obj, dict):
+        return copy.deepcopy(obj)
+    result = copy.deepcopy(obj)
+    targets = [result]
+    if isinstance(result.get("configuration"), dict):
+        targets.append(result["configuration"])
+    for target in targets:
+        for key in secret_fields:
+            if key in target:
+                target[key] = SECRET_PLACEHOLDER
+    return result
+
+
+def _is_scalar(value):
+    return not isinstance(value, (dict, list, tuple))
+
+
+def _normalize(value):
+    """Return a comparison form of ``value``: scalar lists sorted, nested containers normalized (inputs untouched)."""
+    if isinstance(value, dict):
+        return dict((k, _normalize(v)) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        if all(_is_scalar(item) for item in value):
+            return sorted(value, key=lambda item: json.dumps(item, sort_keys=True))
+        return [_normalize(item) for item in value]
+    return value
+
+
+def _differs(current, wanted):
+    """Return True when ``current`` and ``wanted`` differ under the compute_patch comparison rules."""
+    if _is_scalar(current) and _is_scalar(wanted):
+        return current != wanted
+    return json.dumps(_normalize(current), sort_keys=True) != json.dumps(_normalize(wanted), sort_keys=True)
+
+
+def _item_label(path, item_label=None):
+    """Return ``item_label`` or the last path segment of ``path`` naively singularized."""
+    if item_label:
+        return item_label
+    label = path.rstrip("/").split("/")[-1]
+    if label.endswith("ies"):
+        return label[:-3] + "y"
+    if label.endswith("s"):
+        return label[:-1]
+    return label
+
+
+def _display_name(obj):
+    for key in ("name", "username"):
+        if obj.get(key):
+            return obj[key]
+    return obj.get("id")
+
+
 def _query_value(value):
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -180,6 +239,11 @@ class OrchestratorModule(AnsibleModule):
         self.headers = {"Content-Type": "application/json", "Accept": "application/json"}
         self._token = None
         self._authenticated = False
+        self.result_key = "object"
+        # AnsibleModule keeps the diff-mode flag in ``_diff``; keep the flag in ``_diff_mode`` and use
+        # ``_diff`` for the recorded before/after of the last create_or_update/delete_if_needed call.
+        self._diff_mode = bool(getattr(self, "_diff", False))
+        self._diff = None
 
     # ------------------------------------------------------------------ auth
 
@@ -433,3 +497,110 @@ class OrchestratorModule(AnsibleModule):
             if err.status == 404:
                 return None
             self.fail_api(err, "Failed to fetch {0} '{1}'".format(kind, value))
+
+    # ------------------------------------------------------------------ crud
+
+    def build_desired(self, mapping):
+        """Return ``mapping`` (``{api_field: module_param_value}``) without the entries whose value is ``None``."""
+        return dict((k, v) for k, v in mapping.items() if v is not None)
+
+    def compute_patch(self, existing, desired, full_fields=(), secret_fields=(), update_secrets=True):
+        """Return the partial PATCH body that turns ``existing`` into ``desired``.
+
+        Secret keys are sent only when ``update_secrets``; ``full_fields`` nested dicts are sent whole
+        (``existing[key]`` updated with ``desired[key]``) when anything in them changes.
+        """
+        existing = existing or {}
+        patch = {}
+        for key, wanted in desired.items():
+            if key in secret_fields:
+                if update_secrets:
+                    patch[key] = copy.deepcopy(wanted)
+                continue
+            current = existing.get(key)
+            if key in full_fields and isinstance(wanted, dict) and isinstance(current, dict):
+                changed = False
+                for sub_key, sub_value in wanted.items():
+                    if sub_key in secret_fields:
+                        changed = changed or update_secrets
+                    elif _differs(current.get(sub_key), sub_value):
+                        changed = True
+                if changed:
+                    merged = copy.deepcopy(current)
+                    for sub_key, sub_value in wanted.items():
+                        if sub_key in secret_fields and not update_secrets:
+                            continue
+                        merged[sub_key] = copy.deepcopy(sub_value)
+                    patch[key] = merged
+                continue
+            if _differs(current, wanted):
+                patch[key] = copy.deepcopy(wanted)
+        return patch
+
+    def create_or_update(self, existing, desired, path, create_path=None, full_fields=(), secret_fields=(), update_secrets=True, immutable=(), item_label=None):
+        """Create ``desired`` (``POST``) when ``existing`` is ``None``, else ``PATCH`` only what changed.
+
+        Returns ``(changed, obj)``. In check mode nothing is sent and ``obj`` is a preview.
+        """
+        label = _item_label(path, item_label)
+        mask = tuple(DEFAULT_SECRET_FIELDS) + tuple(secret_fields)
+        if existing is None:
+            self._diff = {"before": {}, "after": strip_secrets(desired, mask)}
+            if self.check_mode:
+                return True, copy.deepcopy(desired)
+            try:
+                obj = self.request("POST", create_path or path, data=desired)
+            except OrchestratorAPIError as err:
+                self.fail_api(err, "Failed to create {0}".format(label))
+            return True, obj if obj is not None else copy.deepcopy(desired)
+
+        for key in immutable:
+            if key in desired and _differs(existing.get(key), desired[key]):
+                self.fail_json(msg="{0} cannot be changed on an existing {1}".format(key, label))
+
+        patch = self.compute_patch(existing, desired, full_fields=full_fields, secret_fields=secret_fields, update_secrets=update_secrets)
+        if not patch:
+            self._diff = {"before": {}, "after": {}}
+            return False, existing
+
+        merged = copy.deepcopy(existing)
+        merged.update(copy.deepcopy(patch))
+        before = dict((k, existing.get(k)) for k in patch)
+        self._diff = {"before": strip_secrets(before, mask), "after": strip_secrets(patch, mask)}
+        if self.check_mode:
+            return True, merged
+        try:
+            obj = self.request("PATCH", "{0}/{1}".format(path, existing["id"]), data=patch)
+        except OrchestratorAPIError as err:
+            self.fail_api(err, "Failed to update {0} '{1}'".format(label, _display_name(existing)))
+        return True, obj if obj is not None else merged
+
+    def delete_if_needed(self, existing, path, item_label=None):
+        """Delete ``existing`` (``DELETE <path>/<id>``, skipped in check mode); return whether anything changed."""
+        if existing is None:
+            return False
+        label = _item_label(path, item_label)
+        if existing.get("is_builtin"):
+            self.fail_json(msg="Cannot delete built-in {0} '{1}'".format(label, _display_name(existing)))
+        self._diff = {"before": strip_secrets(existing), "after": {}}
+        if self.check_mode:
+            return True
+        try:
+            self.request("DELETE", "{0}/{1}".format(path, existing["id"]), expect=(200, 202, 204))
+        except OrchestratorAPIError as err:
+            if err.status == 404:
+                return False
+            self.fail_api(err, "Failed to delete {0} '{1}'".format(label, _display_name(existing)))
+        return True
+
+    def exit_result(self, changed, obj=None, **extra):
+        """Exit with ``changed``, ``id`` and the secret-masked ``obj`` under ``self.result_key``.
+
+        ``extra`` keys (such as one-time secrets the module must return) are passed through unmasked.
+        """
+        result = dict(changed=changed, id=obj.get("id") if obj else None)
+        result[self.result_key] = strip_secrets(obj) if obj is not None else None
+        if self._diff_mode and self._diff is not None:
+            result["diff"] = self._diff
+        result.update(extra)
+        self.exit_json(**result)

@@ -16,7 +16,7 @@ SYNC_DIR := $(SYNC_ROOT)/ansible_collections/kenmoini/automation_orchestrator_co
 
 venv:
 	uv venv .venv --python $(PY)
-	uv pip install --python .venv/bin/python ansible-core ansible-lint antsibull-changelog pytest pytest-mock black flake8 pre-commit pre-commit-uv yamllint
+	uv pip install --python .venv/bin/python ansible-core ansible-lint antsibull-changelog pytest pytest-cov pytest-mock black flake8 pre-commit pre-commit-uv yamllint
 
 link:
 	mkdir -p build/ansible_collections/kenmoini .ansible/tmp
