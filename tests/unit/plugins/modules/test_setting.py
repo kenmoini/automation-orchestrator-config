@@ -165,3 +165,41 @@ def test_info_categories(fake_api):
     fake_api.add("GET", BASE + "/categories", 200, {"resources": cats})
     result = run_module(info_module.main, {"categories": True}, fake_api)
     assert result["resources"] == cats
+
+
+def test_bool_vs_int_is_a_change(fake_api):
+    fake_api.add("GET", BASE + "/a.b", 200, _s("a.b", value=1, value_type="json"))
+    fake_api.add("PATCH", BASE + "/a.b", 200, _s("a.b", value=True, value_type="json"))
+    result = run_module(setting_module.main, {"name": "a.b", "value": True}, fake_api)
+    assert result["changed"] is True
+    assert _calls(fake_api, "PATCH")[0]["body"] == {"value": True}
+
+
+def test_string_number_coerced_for_integer_setting(fake_api):
+    fake_api.add("GET", BASE + "/a.b", 200, _s("a.b", value=10))
+    assert run_module(setting_module.main, {"name": "a.b", "value": "10"}, fake_api)["changed"] is False
+    assert not _calls(fake_api, "PATCH")
+    fake_api.add("PATCH", BASE + "/a.b", 200, _s("a.b", value=11))
+    result = run_module(setting_module.main, {"name": "a.b", "value": "11"}, fake_api)
+    assert result["changed"] is True
+    assert _calls(fake_api, "PATCH")[0]["body"] == {"value": 11}
+
+
+def test_string_bool_coerced_for_boolean_setting(fake_api):
+    fake_api.add("GET", BASE + "/a.b", 200, _s("a.b", value=True, default=False, value_type="boolean"))
+    assert run_module(setting_module.main, {"name": "a.b", "value": "TRUE"}, fake_api)["changed"] is False
+    fake_api.add("PATCH", BASE + "/a.b", 200, _s("a.b", value=False, default=False, value_type="boolean"))
+    run_module(setting_module.main, {"name": "a.b", "value": "false"}, fake_api)
+    assert _calls(fake_api, "PATCH")[0]["body"] == {"value": False}
+
+
+def test_noop_diff_is_empty(fake_api):
+    fake_api.add("GET", BASE + "/a.b", 200, _s("a.b", value=5))
+    result = run_module(setting_module.main, {"name": "a.b", "value": 5, "_ansible_diff": True}, fake_api)
+    assert result["diff"] == {"before": {}, "after": {}}
+
+
+def test_empty_name_fails(fake_api):
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(setting_module.main, {"name": "", "value": 1}, fake_api)
+    assert exc.value.kwargs["msg"] == "name must not be empty"

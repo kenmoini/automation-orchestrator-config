@@ -38,6 +38,9 @@ options:
       - New value of the setting named by O(name). It can be of any type that matches the C(value_type) of the setting.
       - When O(name) is given without O(value), the setting is reset to its default by sending V(null).
       - Ignored when O(settings) is used.
+      - A string is converted to a number when the C(value_type) of the setting is V(integer) or V(float), and to a boolean (V(true) or V(false), any case)
+        when it is V(boolean). A boolean is never considered equal to a number.
+      - Sensitive values appear in the C(diff) and C(settings) output. Use C(no_log) on the task to hide them.
     type: raw
   settings:
     description:
@@ -101,14 +104,39 @@ from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_
 )
 
 
+def _coerce(row, wanted):
+    """Convert a string ``wanted`` to the ``value_type`` of the setting row when it is a number or a boolean; otherwise return it as is."""
+    if not isinstance(wanted, str):
+        return wanted
+    value_type = row.get("value_type")
+    text = wanted.strip()
+    try:
+        if value_type == "integer":
+            return int(text)
+        if value_type == "float":
+            return float(text)
+    except ValueError:
+        return wanted
+    if value_type == "boolean" and text.lower() in ("true", "false"):
+        return text.lower() == "true"
+    return wanted
+
+
+def _differ(current, wanted):
+    """Compare like ``_differs`` but never treat a boolean as equal to a number."""
+    if isinstance(current, bool) != isinstance(wanted, bool):
+        return True
+    return _differs(current, wanted)
+
+
 def _is_unchanged(current, wanted):
     """Return True when the setting row ``current`` already has the desired ``wanted`` value (None means: use the default)."""
     explicit = current.get("value")
     if wanted is None:
         return explicit is None
     if explicit is None:
-        return not _differs(current.get("default_value"), wanted)
-    return not _differs(explicit, wanted)
+        return not _differ(current.get("default_value"), wanted)
+    return not _differ(explicit, wanted)
 
 
 def main():
@@ -128,7 +156,9 @@ def main():
     if params["settings"] is not None and params["expected_version"] is not None:
         module.fail_json(msg="expected_version can only be used together with name")
 
-    if params["name"]:
+    if params["name"] is not None and not params["name"]:
+        module.fail_json(msg="name must not be empty")
+    if params["name"] is not None:
         wanted = [(params["name"], params["value"])]
     else:
         wanted = list(params["settings"].items())
@@ -155,6 +185,7 @@ def main():
     changes = []
     for key, value in wanted:
         current = rows[key]
+        value = _coerce(current, value)
         if _is_unchanged(current, value):
             result[key] = current.get("effective_value")
         else:
@@ -162,6 +193,7 @@ def main():
             result[key] = current.get("default_value") if value is None else value
     changed_keys = sorted(key for key, _ in changes)
 
+    module._diff = {"before": {}, "after": {}}
     if changes:
         module._diff = {
             "before": dict((key, rows[key].get("effective_value")) for key, _ in changes),
@@ -169,7 +201,7 @@ def main():
         }
     if changes and not module.check_mode:
         try:
-            if params["name"]:
+            if params["name"] is not None:
                 body = {"value": changes[0][1]}
                 if params["expected_version"] is not None:
                     body["expected_version"] = params["expected_version"]
