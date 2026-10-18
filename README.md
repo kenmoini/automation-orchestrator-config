@@ -163,7 +163,7 @@ Set `orchestrator_configuration_register` to a variable name and the results of 
 
 ## Known limitations
 
-- Automation Orchestrator is a tech preview and its API may change. The collection is built against the API 1.3.1 OpenAPI snapshot (`docs/api/openapi-1.3.1.json`) and has NOT yet been verified against a live instance; every behavior in [docs/API_COMPATIBILITY.md](docs/API_COMPATIBILITY.md) is unverified until the first live run.
+- Automation Orchestrator is a tech preview and its API may change. The collection is built against the API 1.3.1 OpenAPI snapshot (`docs/api/openapi-1.3.1.json`) and was verified against a live 1.3.1 instance on 2026-10-18; [docs/API_COMPATIBILITY.md](docs/API_COMPATIBILITY.md) records what was confirmed and the server rules (workflow definition schema, integration URL validation, required credential types) that configuration must follow.
 - Some API list endpoints have no name filter, so lookups for workflows, credentials, groups, integrations and identity providers page through results client-side.
 
 ## Development

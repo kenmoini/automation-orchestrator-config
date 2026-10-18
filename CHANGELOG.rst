@@ -73,11 +73,17 @@ Bugfixes
 --------
 
 - collection build - exclude ``.superpowers``, ``.ansible``, ``.claude``, ``tests/output``, ``orchestrator_exports``, ``.pytest_cache`` and ``__pycache__`` from the built tarball.
+- configure_orchestrator and tests playbooks - load only the top level of the configs directory so a ``files/`` subdirectory with workflow definitions is not read as variables.
+- configure_orchestrator playbook - expose the resolved configs directory to the roles as ``orchestrator_configs_dir`` so relative ``definition_file`` paths resolve against it with the default directory.
 - configure_orchestrator playbook and orchestrator_workflows role - a relative ``orchestrator_configs_dir`` and a relative ``definition_file`` resolve against the current working directory (``definition_file`` against ``orchestrator_configs_dir``) instead of the installed playbook directory.
 - dispatch - run ``orchestrator_groups`` before ``orchestrator_identity_providers`` and ``orchestrator_service_accounts`` before ``orchestrator_role_assignments`` so that group mappings and service account principals resolve.
+- documentation and test fixtures - use the workflow definition shape the server accepts (``from``/``to`` edges, ``manual_trigger`` triggers with ``parameters``, underscore ids) and real credential type names (``HTTP Bearer Token``, ``LLM Provider``).
 - identity_provider - mask ``configuration.client_secret`` in the logged module arguments (``invocation``); the ``orchestrator_users``, ``orchestrator_credentials``, ``orchestrator_identity_providers``, ``orchestrator_service_account_credentials`` and ``orchestrator_execution_launch`` roles now default secure logging to ``true``.
+- identity_provider - treat URL fields that differ from the stored value only by a trailing slash as unchanged; the server stores ``issuer_url`` with a trailing slash.
 - module_utils - ``get_all``, ``get_one_by_name`` and ``find_existing`` fail the task with the API status, code and body instead of crashing with a traceback when a lookup request returns an error.
 - module_utils - a token no longer conflicts with username/password or client credentials (for example from ``ORCHESTRATOR_USERNAME``/``ORCHESTRATOR_PASSWORD``); the precedence token, client credentials, username/password is applied.
+- user - keep the implicit built-in ``authenticated`` group out of the membership comparison; the server adds every user to it and ignores its removal, which made every run report a change.
+- user - mark ``update_password`` as a non-secret option so Ansible no longer warns that ``no_log`` is missing.
 - user and service_account_credential - follow pagination when reading group memberships and service account credentials.
 
 New Modules

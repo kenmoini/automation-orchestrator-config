@@ -1,0 +1,272 @@
+objects:
+  role:
+    collect_async_status:
+      description: Check the status of asynchronous tasks and optionally collect errors
+      name: collect_async_status
+      version_added: null
+    dispatch:
+      description: An Ansible Role to call other roles to configure Automation Orchestrator.
+      name: dispatch
+      version_added: null
+    global_vars:
+      description: Global variables consumed by every role in the collection
+      name: global_vars
+      version_added: null
+    orchestrator_approval_decisions:
+      description: An Ansible Role to approve or reject pending approval requests
+        in Automation Orchestrator.
+      name: orchestrator_approval_decisions
+      version_added: null
+    orchestrator_credentials:
+      description: An Ansible Role to create, update and delete Credentials in Automation
+        Orchestrator.
+      name: orchestrator_credentials
+      version_added: null
+    orchestrator_execution_launch:
+      description: An Ansible Role to launch workflow executions in Automation Orchestrator.
+      name: orchestrator_execution_launch
+      version_added: null
+    orchestrator_groups:
+      description: An Ansible Role to create, update and delete Groups in Automation
+        Orchestrator.
+      name: orchestrator_groups
+      version_added: null
+    orchestrator_identity_providers:
+      description: An Ansible Role to create, update and delete Identity Providers
+        in Automation Orchestrator.
+      name: orchestrator_identity_providers
+      version_added: null
+    orchestrator_integrations:
+      description: An Ansible Role to create, update and delete Integrations in Automation
+        Orchestrator.
+      name: orchestrator_integrations
+      version_added: null
+    orchestrator_policies:
+      description: An Ansible Role to create, update and delete Policies in Automation
+        Orchestrator.
+      name: orchestrator_policies
+      version_added: null
+    orchestrator_projects:
+      description: An Ansible Role to create, update and delete Projects in Automation
+        Orchestrator.
+      name: orchestrator_projects
+      version_added: null
+    orchestrator_role_assignments:
+      description: An Ansible Role to create and delete Role Assignments in Automation
+        Orchestrator.
+      name: orchestrator_role_assignments
+      version_added: null
+    orchestrator_roles:
+      description: An Ansible Role to create, update and delete Roles in Automation
+        Orchestrator.
+      name: orchestrator_roles
+      version_added: null
+    orchestrator_service_account_credentials:
+      description: An Ansible Role to create, rotate, enable, disable and delete Service
+        Account Credentials in Automation Orchestrator.
+      name: orchestrator_service_account_credentials
+      version_added: null
+    orchestrator_service_accounts:
+      description: An Ansible Role to create, update, enable, disable and delete Service
+        Accounts in Automation Orchestrator.
+      name: orchestrator_service_accounts
+      version_added: null
+    orchestrator_settings:
+      description: An Ansible Role to update Settings in Automation Orchestrator.
+      name: orchestrator_settings
+      version_added: null
+    orchestrator_users:
+      description: An Ansible Role to create, update and delete Users in Automation
+        Orchestrator.
+      name: orchestrator_users
+      version_added: null
+    orchestrator_workflows:
+      description: An Ansible Role to create, update and delete Workflows in Automation
+        Orchestrator.
+      name: orchestrator_workflows
+      version_added: null
+plugins:
+  become: {}
+  cache: {}
+  callback: {}
+  cliconf: {}
+  connection: {}
+  filter: {}
+  httpapi: {}
+  inventory: {}
+  lookup: {}
+  module:
+    api:
+      description: Call any Automation Orchestrator API endpoint
+      name: api
+      namespace: ''
+      version_added: 0.1.0
+    approval:
+      description: Approve or reject a pending approval request on the Automation
+        Orchestrator
+      name: approval
+      namespace: ''
+      version_added: 0.1.0
+    approval_info:
+      description: Gather information about approval requests on the Automation Orchestrator
+      name: approval_info
+      namespace: ''
+      version_added: 0.1.0
+    credential:
+      description: Manage credentials in the Automation Orchestrator
+      name: credential
+      namespace: ''
+      version_added: 0.1.0
+    credential_info:
+      description: Gather information about credentials in the Automation Orchestrator
+      name: credential_info
+      namespace: ''
+      version_added: 0.1.0
+    credential_type_info:
+      description: Gather information about credential types in the Automation Orchestrator
+      name: credential_type_info
+      namespace: ''
+      version_added: 0.1.0
+    execution:
+      description: Launch a workflow execution on the Automation Orchestrator
+      name: execution
+      namespace: ''
+      version_added: 0.1.0
+    execution_cancel:
+      description: Cancel a running workflow execution on the Automation Orchestrator
+      name: execution_cancel
+      namespace: ''
+      version_added: 0.1.0
+    execution_info:
+      description: Gather information about workflow executions on the Automation
+        Orchestrator
+      name: execution_info
+      namespace: ''
+      version_added: 0.1.0
+    group:
+      description: Manage groups in the Automation Orchestrator
+      name: group
+      namespace: ''
+      version_added: 0.1.0
+    group_info:
+      description: Gather information about groups in the Automation Orchestrator
+      name: group_info
+      namespace: ''
+      version_added: 0.1.0
+    identity_provider:
+      description: Manage OIDC identity providers in the Automation Orchestrator
+      name: identity_provider
+      namespace: ''
+      version_added: 0.1.0
+    identity_provider_info:
+      description: Gather information about identity providers in the Automation Orchestrator
+      name: identity_provider_info
+      namespace: ''
+      version_added: 0.1.0
+    integration:
+      description: Manage integrations in the Automation Orchestrator
+      name: integration
+      namespace: ''
+      version_added: 0.1.0
+    integration_info:
+      description: Gather information about integrations in the Automation Orchestrator
+      name: integration_info
+      namespace: ''
+      version_added: 0.1.0
+    policy:
+      description: Manage policies in the Automation Orchestrator
+      name: policy
+      namespace: ''
+      version_added: 0.1.0
+    policy_info:
+      description: Gather information about policies in the Automation Orchestrator
+      name: policy_info
+      namespace: ''
+      version_added: 0.1.0
+    project:
+      description: Manage projects in the Automation Orchestrator
+      name: project
+      namespace: ''
+      version_added: 0.1.0
+    project_info:
+      description: Gather information about projects in the Automation Orchestrator
+      name: project_info
+      namespace: ''
+      version_added: 0.1.0
+    role:
+      description: Manage roles in the Automation Orchestrator
+      name: role
+      namespace: ''
+      version_added: 0.1.0
+    role_assignment:
+      description: Manage role assignments in the Automation Orchestrator
+      name: role_assignment
+      namespace: ''
+      version_added: 0.1.0
+    role_assignment_info:
+      description: Gather information about role assignments in the Automation Orchestrator
+      name: role_assignment_info
+      namespace: ''
+      version_added: 0.1.0
+    role_info:
+      description: Gather information about roles in the Automation Orchestrator
+      name: role_info
+      namespace: ''
+      version_added: 0.1.0
+    service_account:
+      description: Manage service accounts in the Automation Orchestrator
+      name: service_account
+      namespace: ''
+      version_added: 0.1.0
+    service_account_credential:
+      description: Manage the client credentials of a service account in the Automation
+        Orchestrator
+      name: service_account_credential
+      namespace: ''
+      version_added: 0.1.0
+    service_account_info:
+      description: Gather information about service accounts in the Automation Orchestrator
+      name: service_account_info
+      namespace: ''
+      version_added: 0.1.0
+    setting:
+      description: Manage runtime settings of the Automation Orchestrator
+      name: setting
+      namespace: ''
+      version_added: 0.1.0
+    setting_info:
+      description: Gather information about runtime settings of the Automation Orchestrator
+      name: setting_info
+      namespace: ''
+      version_added: 0.1.0
+    token:
+      description: Obtain an access token from the Automation Orchestrator
+      name: token
+      namespace: ''
+      version_added: 0.1.0
+    user:
+      description: Manage local users in the Automation Orchestrator
+      name: user
+      namespace: ''
+      version_added: 0.1.0
+    user_info:
+      description: Gather information about users in the Automation Orchestrator
+      name: user_info
+      namespace: ''
+      version_added: 0.1.0
+    workflow:
+      description: Manage workflows in the Automation Orchestrator
+      name: workflow
+      namespace: ''
+      version_added: 0.1.0
+    workflow_info:
+      description: Gather information about workflows in the Automation Orchestrator
+      name: workflow_info
+      namespace: ''
+      version_added: 0.1.0
+  netconf: {}
+  shell: {}
+  strategy: {}
+  test: {}
+  vars: {}
+version: 0.1.0
