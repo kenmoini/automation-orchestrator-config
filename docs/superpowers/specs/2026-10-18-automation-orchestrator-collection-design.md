@@ -138,7 +138,7 @@ tests/configure_orchestrator.yml  tests/configs/*.yml  tests/auth.yml.example  (
   (`ORCHESTRATOR_TOKEN`, no_log), `orchestrator_client_id` / `orchestrator_client_secret`
   (`ORCHESTRATOR_CLIENT_ID/SECRET`, for service accounts), `validate_certs`
   (`ORCHESTRATOR_VERIFY_SSL`, default true), `request_timeout` (default 10).
-  Mutually exclusive groups enforced; precedence token > client credentials > username/password.
+  No mutual exclusion; `authenticate()` applies precedence token > client credentials > username/password; `required_together` for each pair.
 - `authenticate()`: login or client-credentials; stores bearer header. On 401 mid-run, re-login once.
 - `request(method, path, query=None, data=None, expect=(200,201,204))` → parsed JSON; parses
   RFC 9457 body into `fail_json(msg=detail, code=..., status=...)`; honors `Retry-After` on 429 (bounded).

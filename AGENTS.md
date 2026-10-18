@@ -51,7 +51,7 @@ All resource roles must follow the async block pattern:
 
 - Modules take `orchestrator_host`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, `validate_certs`, `request_timeout`
 - Roles pass `orchestrator_hostname`, `orchestrator_username`, `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`, `orchestrator_validate_certs`, `orchestrator_request_timeout` with `default(omit, true)` fallbacks
-- Precedence is token, client credentials, username/password
+- No mutual exclusion between auth methods; `authenticate()` applies the precedence token > client credentials > username/password (`required_together` for each pair)
 
 ### Dispatch Integration
 

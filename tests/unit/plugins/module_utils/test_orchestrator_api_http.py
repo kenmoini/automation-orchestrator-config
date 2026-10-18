@@ -212,3 +212,43 @@ def test_last_status_records_final_response_status(fake_api):
     assert module.last_status == 200
     module.request("DELETE", "/workflows/w1")
     assert module.last_status == 204
+
+
+# ------------------------------------------------------------ auth precedence (no mutual exclusion)
+
+
+def test_token_param_overrides_env_username_password(fake_api, monkeypatch):
+    monkeypatch.setenv("ORCHESTRATOR_USERNAME", "envuser")
+    monkeypatch.setenv("ORCHESTRATOR_PASSWORD", "envpw")
+    fake_api.add("GET", "/api/v1/version", 200, VERSION)
+    module = make_module(fake_api, orchestrator_token="paramtok")
+    assert module.params["orchestrator_username"] == "envuser"
+    module.request("GET", "/version")
+    assert [c["path"] for c in fake_api.calls] == ["/api/v1/version"]
+    assert fake_api.calls[0]["headers"]["Authorization"] == "Bearer paramtok"
+
+
+def test_token_with_username_401_is_not_retried(fake_api, monkeypatch):
+    monkeypatch.setenv("ORCHESTRATOR_USERNAME", "envuser")
+    monkeypatch.setenv("ORCHESTRATOR_PASSWORD", "envpw")
+    fake_api.add("GET", "/api/v1/version", 401, {"title": "Unauthorized", "detail": "bad token"})
+    module = make_module(fake_api, orchestrator_token="paramtok")
+    with pytest.raises(OrchestratorAPIError) as exc:
+        module.request("GET", "/version")
+    assert exc.value.status == 401
+    assert [c["path"] for c in fake_api.calls] == ["/api/v1/version"]
+
+
+def test_client_credentials_take_precedence_over_username_password(fake_api):
+    fake_api.add("POST", "/api/v1/auth/token", 200, TOKEN_RESPONSE)
+    fake_api.add("GET", "/api/v1/version", 200, VERSION)
+    module = make_module(
+        fake_api,
+        orchestrator_username="admin",
+        orchestrator_password="pw",
+        orchestrator_client_id="cid",
+        orchestrator_client_secret="sec",
+    )
+    module.request("GET", "/version")
+    assert [c["path"] for c in fake_api.calls] == ["/api/v1/auth/token", "/api/v1/version"]
+    assert fake_api.calls[1]["headers"]["Authorization"] == "Bearer abc"

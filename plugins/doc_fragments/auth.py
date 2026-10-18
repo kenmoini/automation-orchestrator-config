@@ -21,7 +21,7 @@ options:
   orchestrator_username:
     description:
       - Username used to log in with C(/auth/login).
-      - Requires O(orchestrator_password) and is mutually exclusive with O(orchestrator_token) and O(orchestrator_client_id).
+      - Requires O(orchestrator_password). Used only when neither O(orchestrator_token) nor O(orchestrator_client_id) is set.
       - If not set, the value of the E(ORCHESTRATOR_USERNAME) environment variable is used.
     type: str
   orchestrator_password:
@@ -32,13 +32,13 @@ options:
   orchestrator_token:
     description:
       - A bearer access token, used as is without any login request.
-      - Mutually exclusive with O(orchestrator_username) and O(orchestrator_client_id).
+      - Takes precedence over O(orchestrator_client_id) and O(orchestrator_username) when several are set.
       - If not set, the value of the E(ORCHESTRATOR_TOKEN) environment variable is used.
     type: str
   orchestrator_client_id:
     description:
       - OAuth2 client ID of a service account, used with the C(client_credentials) grant.
-      - Requires O(orchestrator_client_secret) and is mutually exclusive with O(orchestrator_token) and O(orchestrator_username).
+      - Requires O(orchestrator_client_secret). Takes precedence over O(orchestrator_username); O(orchestrator_token) takes precedence over it.
       - If not set, the value of the E(ORCHESTRATOR_CLIENT_ID) environment variable is used.
     type: str
   orchestrator_client_secret:
@@ -60,6 +60,9 @@ options:
     type: float
     default: 10
 notes:
+  - Authentication methods are not mutually exclusive. When several are set (as options or E(ORCHESTRATOR_*) environment variables),
+    the module uses O(orchestrator_token) first, then O(orchestrator_client_id) with O(orchestrator_client_secret),
+    then O(orchestrator_username) with O(orchestrator_password).
   - Set the connection options once for a whole play with
     C(module_defaults) and C(group/kenmoini.automation_orchestrator_config.orchestrator).
   - Prefer O(orchestrator_token), obtained once with the M(kenmoini.automation_orchestrator_config.token) module,

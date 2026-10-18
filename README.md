@@ -44,9 +44,11 @@ Roles take the `orchestrator_*` variables below and pass them to the modules. Mo
 | `orchestrator_client_id` | `orchestrator_client_id` | `ORCHESTRATOR_CLIENT_ID` |
 | `orchestrator_client_secret` | `orchestrator_client_secret` | `ORCHESTRATOR_CLIENT_SECRET` |
 | `validate_certs` | `orchestrator_validate_certs` | `ORCHESTRATOR_VERIFY_SSL` |
-| `request_timeout` | `orchestrator_request_timeout` | (none; default 10) |
+| `request_timeout` | `orchestrator_request_timeout` | `ORCHESTRATOR_REQUEST_TIMEOUT` |
 
-Precedence: token, then client credentials (client ID and secret), then username and password.
+The module default for `request_timeout` is 10 seconds. Roles always pass `request_timeout: "{{ orchestrator_request_timeout | default(10, true) }}"`, so when you use the roles set `orchestrator_request_timeout`; the `ORCHESTRATOR_REQUEST_TIMEOUT` environment variable only applies to direct module calls.
+
+The authentication methods are not mutually exclusive. When several are set (parameters or environment variables), the first available one is used: token, then client credentials (client ID and secret), then username and password. For example `orchestrator_token` overrides `ORCHESTRATOR_USERNAME`/`ORCHESTRATOR_PASSWORD` from the environment.
 
 Instead of passing the parameters to every task, set them once with the action group:
 

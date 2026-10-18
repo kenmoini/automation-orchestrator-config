@@ -87,12 +87,6 @@ AUTH_ARGUMENT_SPEC = dict(
     request_timeout=dict(type="float", default=10, fallback=(env_fallback, ["ORCHESTRATOR_REQUEST_TIMEOUT"])),
 )
 
-AUTH_MUTUALLY_EXCLUSIVE = [
-    ["orchestrator_token", "orchestrator_username"],
-    ["orchestrator_token", "orchestrator_client_id"],
-    ["orchestrator_username", "orchestrator_client_id"],
-]
-
 AUTH_REQUIRED_TOGETHER = [
     ["orchestrator_username", "orchestrator_password"],
     ["orchestrator_client_id", "orchestrator_client_secret"],
@@ -232,7 +226,8 @@ class OrchestratorModule(AnsibleModule):
     def __init__(self, argument_spec=None, **kwargs):
         spec = dict(argument_spec or {})
         spec.update(AUTH_ARGUMENT_SPEC)
-        kwargs["mutually_exclusive"] = list(kwargs.get("mutually_exclusive") or []) + AUTH_MUTUALLY_EXCLUSIVE
+        # No mutual exclusion between auth methods: authenticate() applies the precedence
+        # token > client credentials > username/password, so a token can override ORCHESTRATOR_USERNAME/PASSWORD.
         kwargs["required_together"] = list(kwargs.get("required_together") or []) + AUTH_REQUIRED_TOGETHER
         super(OrchestratorModule, self).__init__(argument_spec=spec, **kwargs)
 
@@ -291,6 +286,9 @@ class OrchestratorModule(AnsibleModule):
         return body["access_token"]
 
     def _can_reauthenticate(self):
+        """Return True when a 401 can be fixed by fetching a new token (never when a static token takes precedence)."""
+        if self.params.get("orchestrator_token"):
+            return False
         return bool(self.params.get("orchestrator_client_id") or self.params.get("orchestrator_username"))
 
     # ------------------------------------------------------------------ http

@@ -13,12 +13,28 @@
       when: (playbook_dir ~ '/auth.yml') is file
       tags: always
 
-    - name: Default authentication variables from the environment
+    - name: Default host and certificate validation from the environment
       ansible.builtin.set_fact:
         orchestrator_hostname: "{{ orchestrator_hostname | default(lookup('env', 'ORCHESTRATOR_HOST')) }}"
-        orchestrator_username: "{{ orchestrator_username | default(lookup('env', 'ORCHESTRATOR_USERNAME')) }}"
-        orchestrator_password: "{{ orchestrator_password | default(lookup('env', 'ORCHESTRATOR_PASSWORD')) }}"
         orchestrator_validate_certs: "{{ orchestrator_validate_certs | default(lookup('env', 'ORCHESTRATOR_VERIFY_SSL') | default('false', true) | bool) }}"
+      tags: always
+
+    # Username and password stay undefined unless tests/auth.yml or the environment provides them,
+    # so token-only authentication (orchestrator_token in tests/auth.yml) works.
+    - name: Default the username from the environment when it is set there
+      ansible.builtin.set_fact:
+        orchestrator_username: "{{ lookup('env', 'ORCHESTRATOR_USERNAME') }}"
+      when:
+        - orchestrator_username is not defined
+        - lookup('env', 'ORCHESTRATOR_USERNAME') | length > 0
+      tags: always
+
+    - name: Default the password from the environment when it is set there
+      ansible.builtin.set_fact:
+        orchestrator_password: "{{ lookup('env', 'ORCHESTRATOR_PASSWORD') }}"
+      when:
+        - orchestrator_password is not defined
+        - lookup('env', 'ORCHESTRATOR_PASSWORD') | length > 0
       no_log: true
       tags: always
 

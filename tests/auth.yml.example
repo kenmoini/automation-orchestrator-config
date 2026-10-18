@@ -6,5 +6,7 @@ orchestrator_hostname: https://orchestrator.example.invalid
 orchestrator_username: admin
 orchestrator_password: changeme
 orchestrator_validate_certs: false
+# A token takes precedence over username/password when both are set;
+# for token-only auth set orchestrator_token and drop orchestrator_username/orchestrator_password.
 # orchestrator_token: changeme
 ...

@@ -60,7 +60,7 @@ orchestrator_token: your-access-token
 ...
 ```
 
-Precedence is token, then client credentials, then username and password. Never commit credentials; encrypt the file:
+If several methods are set, the first available is used: token, then client credentials, then username and password (they are not mutually exclusive). Never commit credentials; encrypt the file:
 
 ```bash
 ansible-vault encrypt orchestrator_configs/auth.yml
