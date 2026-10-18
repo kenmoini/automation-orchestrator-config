@@ -143,3 +143,22 @@ def test_find_existing_prefers_name_then_new_name_then_none(fake_api):
     assert module.find_existing("/projects", "gone", "new")["id"] == "n"
     assert module.find_existing("/projects", "gone", "nothing") is None
     assert module.find_existing("/projects", "gone") is None
+
+
+def test_find_existing_with_kind_uses_scope_rule(fake_api):
+    fake_api.add(
+        "GET",
+        "/api/v1/roles",
+        200,
+        page([{"id": UID, "name": "ops", "project_id": PID}, {"id": GID, "name": "ops", "project_id": None}]),
+        query={"name": "ops"},
+    )
+    fake_api.add("GET", "/api/v1/roles", 200, page([]), query={"name": "gone"})
+    fake_api.add("GET", "/api/v1/roles", 200, page([{"id": "n", "name": "new", "project_id": PID}]), query={"name": "new"})
+    module = make_module(fake_api)
+
+    assert module.find_existing("/roles", "ops", kind="role")["id"] == GID
+    assert module.find_existing("/roles", "ops", kind="role", project_id=PID)["id"] == UID
+    assert fake_api.calls[-1]["query"]["project_id"] == PID
+    assert module.find_existing("/roles", "gone", "new", kind="role", project_id=PID)["id"] == "n"
+    assert module.find_existing("/roles", "gone", "new", kind="role") is None

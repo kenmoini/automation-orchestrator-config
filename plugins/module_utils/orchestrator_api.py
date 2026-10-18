@@ -404,12 +404,18 @@ class OrchestratorModule(AnsibleModule):
         """
         return self._find_by_name(path, name, name_field=name_field, query=query, label=label)
 
-    def find_existing(self, path, name, new_name=None, **lookup_kwargs):
+    def find_existing(self, path, name, new_name=None, kind=None, project_id=None, **lookup_kwargs):
         """Return the object called ``name``; when absent and ``new_name`` is given, the object called ``new_name``.
 
         This keeps renames idempotent: after ``name`` was renamed to ``new_name`` a rerun finds the renamed object.
-        ``lookup_kwargs`` (``query``, ``label``, ``name_field``) are passed to ``get_one_by_name``.
+        With ``kind`` (a scoped lookup kind such as ``role``) the lookup uses ``resolve_obj(kind, ..., project_id)`` and so
+        follows its system-scope rule. Otherwise ``lookup_kwargs`` (``query``, ``label``, ``name_field``) are passed to ``get_one_by_name``.
         """
+        if kind is not None:
+            existing = self.resolve_obj(kind, name, project_id=project_id)
+            if existing is None and new_name:
+                existing = self.resolve_obj(kind, new_name, project_id=project_id)
+            return existing
         existing = self.get_one_by_name(path, name, **lookup_kwargs)
         if existing is None and new_name:
             existing = self.get_one_by_name(path, new_name, **lookup_kwargs)
