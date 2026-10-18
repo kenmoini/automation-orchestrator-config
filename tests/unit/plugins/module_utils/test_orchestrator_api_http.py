@@ -15,6 +15,7 @@ from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_
     normalize_host,
 )
 from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import (
+    FETCH_URL_TARGET,
     AnsibleFailJson,
     make_module,
 )
@@ -93,6 +94,17 @@ def test_401_after_auth_relogins_once_then_fails(fake_api):
     assert [c["path"] for c in fake_api.calls] == ["/api/v1/version", "/api/v1/auth/login", "/api/v1/version"]
 
 
+def test_static_token_401_not_retried(fake_api):
+    fake_api.add("GET", "/api/v1/version", 401, {"title": "Unauthorized", "detail": "token revoked", "code": "UNAUTHORIZED"})
+    module = make_module(fake_api)
+    with pytest.raises(OrchestratorAPIError) as exc:
+        module.request("GET", "/version")
+    assert exc.value.status == 401
+    assert exc.value.detail == "token revoked"
+    assert len(fake_api.calls) == 1
+    assert not any(c["path"].startswith("/api/v1/auth/") for c in fake_api.calls)
+
+
 def test_login_401_fails_with_problem_detail(fake_api):
     fake_api.add("POST", "/api/v1/auth/login", 401, {"title": "Unauthorized", "detail": "invalid credentials", "code": "UNAUTHORIZED"})
     module = make_module(fake_api, orchestrator_username="admin", orchestrator_password="bad")
@@ -159,6 +171,18 @@ def test_error_without_problem_body_falls_back_to_msg(fake_api):
     assert exc.value.status == 500
     assert exc.value.detail == "HTTP Error 500"
     assert exc.value.code is None
+
+
+def test_connection_failure_without_response(mocker):
+    mocker.patch(
+        FETCH_URL_TARGET,
+        return_value=(None, {"status": -1, "msg": "Request failed: <urlopen error [Errno 111] Connection refused>", "url": "x"}),
+    )
+    module = make_module()
+    with pytest.raises(OrchestratorAPIError) as exc:
+        module.request("GET", "/version")
+    assert exc.value.status == -1
+    assert "Connection refused" in exc.value.detail
 
 
 def test_request_drops_none_query_and_returns_none_on_204(fake_api):

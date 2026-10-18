@@ -81,8 +81,19 @@ class FakeResponse:
         return self._raw
 
 
+class ConsumedErrorResponse:
+    """Mimics the HTTPError fetch_url returns on 4xx/5xx: already read and closed, body only in info["body"]."""
+
+    def read(self):
+        raise ValueError("read of closed file")
+
+
 class FakeAPI:
-    """Stand-in for ``fetch_url`` that serves canned responses and records every call."""
+    """Stand-in for ``fetch_url`` that serves canned responses and records every call.
+
+    Matches the real contract: 2xx -> readable response; 4xx/5xx -> a consumed response object
+    whose ``read()`` fails, with the body in ``info["body"]``.
+    """
 
     def __init__(self):
         self.routes = []
@@ -138,7 +149,7 @@ class FakeAPI:
         if 200 <= status < 300:
             info["msg"] = "OK"
             return FakeResponse(payload), info
-        return None, info
+        return ConsumedErrorResponse(), info
 
 
 def make_module(fake_api=None, argument_spec=None, supports_check_mode=False, **params):

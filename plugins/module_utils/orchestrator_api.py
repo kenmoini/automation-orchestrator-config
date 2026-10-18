@@ -189,10 +189,12 @@ class OrchestratorModule(AnsibleModule):
             payload = json.dumps(data)
         response, info = fetch_url(self, url, data=payload, headers=headers, method=method, timeout=self.params["request_timeout"])
         status = info.get("status", -1)
-        if response is not None:
-            raw = response.read()
-        else:
+        # On HTTP errors fetch_url returns the already-read-and-closed HTTPError as ``response``
+        # and puts the body in info["body"]; on connection failures ``response`` is None.
+        if response is None or status >= 400:
             raw = info.get("body")
+        else:
+            raw = response.read()
         return status, _parse_body(raw), info
 
     def _retry_after(self, info):
