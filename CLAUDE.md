@@ -64,6 +64,7 @@ See `docs/STANDARDS.md`.
 ## Dev Commands
 
 `make venv`, `make lint`, `make sanity`, `make unit`, `make build` (the Makefile arrives in a later task).
+`make pytest` runs the unit tests with plain pytest on the synced copy (use it where ansible-test cannot run, e.g. sandboxes).
 
 ## Changelogs
 

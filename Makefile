@@ -12,7 +12,7 @@ COVERAGE ?=
 SYNC_ROOT ?= $(patsubst %/,%,$(or $(TMPDIR),/tmp))/kenmoini-aoc-sync
 SYNC_DIR := $(SYNC_ROOT)/ansible_collections/kenmoini/automation_orchestrator_config
 
-.PHONY: venv link sync lint sanity unit build install changelog live live-check live-cleanup
+.PHONY: venv link sync lint sanity unit pytest build install changelog live live-check live-cleanup
 
 venv:
 	uv venv .venv --python $(PY)
@@ -43,6 +43,10 @@ unit: sync
 	else \
 		cd $(SYNC_DIR) && $(CURDIR)/.venv/bin/ansible-test units --venv --python $(PY); \
 	fi
+
+# Unit tests via plain pytest on the synced copy (no ansible-test venv; works where ansible-test cannot).
+pytest: sync
+	cd $(SYNC_DIR) && PYTHONPATH=$(SYNC_ROOT) $(CURDIR)/.venv/bin/pytest tests/unit -q -p no:cacheprovider
 
 build:
 	mkdir -p build .ansible/tmp
