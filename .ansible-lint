@@ -10,6 +10,7 @@ exclude_paths:
   - .ansible/
   - docs/
   - tests/output/
+  - tests/auth.yml
   - .superpowers/
 loop_var_prefix: "^(__|{role}_)"
 var_naming_pattern: "^[a-z_][a-z0-9_]*$"

@@ -85,7 +85,7 @@ This also speeds up the overall role.
 |`first_name`|""|no|str|First name of the user.|
 |`last_name`|""|no|str|Last name of the user.|
 |`is_enabled`|""|no|bool|Whether the user can log in.|
-|`groups`|`[]`|no|list|Names or IDs of the groups the user belongs to. When set the memberships are made to match; an empty list removes all manual memberships.|
+|`groups`|`[]`|no|list|Names or IDs of the groups the user belongs to. When set the memberships are made to match; an empty list removes all manual memberships. Identity-provider memberships and the implicit built-in `authenticated` group are always kept.|
 |`state`|`present`|no|str|Desired state of the resource: `present`, `absent`, `exists` (`absent` is permanent).|
 |`register`|""|no|str|Variable to set based on the result of the object creation/modification.|
 

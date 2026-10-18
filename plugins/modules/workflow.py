@@ -129,7 +129,8 @@ EXAMPLES = r"""
     workflow_definition:
       triggers:
         - id: manual
-          type: manual
+          type: manual_trigger
+          parameters: {}
       nodes: []
       edges: []
 

@@ -75,6 +75,8 @@ This also speeds up the overall role.
 
 Provide the definition inline as `workflow_definition`, or point `definition_file` to a JSON or YAML file. The file is read on the controller by the role (JSON is valid YAML) and passed to the module as `workflow_definition`; `definition_file` itself is not passed to the module. Relative paths of `definition_file` resolve against `orchestrator_configs_dir` (anchored to the current working directory when it is itself relative), else against the current working directory; absolute paths are used as-is. `workflow_definition` takes precedence when both are set.
 
+The server validates definitions strictly (see [docs/API_COMPATIBILITY.md](../../docs/API_COMPATIBILITY.md)): edges use `from` and `to`, node and trigger ids match `^[a-zA-Z_][a-zA-Z0-9_]*$` (no hyphens), trigger types are `manual_trigger`, `scheduled_trigger`, `webhook_trigger` or `eda_trigger`, and every trigger carries a `parameters` object (`{}` for a manual trigger). A definition that breaks the schema is either rejected or stored with `has_validation_issues: true`; check `validation_result` in the registered result.
+
 ### Workflow Variables
 
 |Variable Name|Default Value|Required|Type|Description|
@@ -84,7 +86,7 @@ Provide the definition inline as `workflow_definition`, or point `definition_fil
 |`description`|""|no|str|Description of the workflow.|
 |`labels`|`{}`|no|dict|Labels (key/value pairs) to set on the workflow.|
 |`project`|""|yes|str|Name or ID of the project that owns the workflow. Cannot be changed on an existing workflow.|
-|`workflow_definition`|`{}`|no|dict|The workflow definition (`triggers`, `nodes`, `edges`). Required to create a workflow.|
+|`workflow_definition`|`{}`|no|dict|The workflow definition (`triggers`, `nodes`, `edges`). Required to create a workflow. The item `name` is written into the definition's `name` key, so an exported definition round-trips exactly when the two match.|
 |`definition_file`|""|no|path|Path to a JSON or YAML file with the workflow definition, read on the controller. Used when `workflow_definition` is not set.|
 |`is_import`|""|no|bool|Mark the workflow as imported when it is created.|
 |`change_description`|""|no|str|Description of the change, recorded on the new version and on publishing.|
@@ -105,16 +107,17 @@ orchestrator_workflows:
       schema_version: 2.0.0
       name: nightly-cleanup
       triggers:
-        - id: trigger-1
-          type: manual
+        - id: trigger_1
+          type: manual_trigger
+          parameters: {}
       nodes:
-        - id: node-1
+        - id: node_1
           type: wait
           parameters:
             duration: 1
       edges:
-        - source: trigger-1
-          target: node-1
+        - from: trigger_1
+          to: node_1
     publish: true
   - name: from-file
     project: Platform Team
@@ -138,13 +141,13 @@ orchestrator_workflows:
         "name": "nightly-cleanup",
         "triggers": [
           {
-            "id": "trigger-1",
-            "type": "manual"
+            "id": "trigger_1",
+            "type": "manual_trigger", "parameters": {}
           }
         ],
         "nodes": [
           {
-            "id": "node-1",
+            "id": "node_1",
             "type": "wait",
             "parameters": {
               "duration": 1
@@ -153,8 +156,8 @@ orchestrator_workflows:
         ],
         "edges": [
           {
-            "source": "trigger-1",
-            "target": "node-1"
+            "from": "trigger_1",
+            "to": "node_1"
           }
         ]
       },

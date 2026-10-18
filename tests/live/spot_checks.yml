@@ -1,0 +1,296 @@
+---
+# Live spot-checks against a real Automation Orchestrator instance.
+#
+# Confirms the API behaviours that the OpenAPI snapshot leaves open and that
+# docs/API_COMPATIBILITY.md lists as "unverified". Everything it creates is
+# named aoc-test-spot-* and is removed at the end, even on failure.
+#
+# Credentials come from tests/auth.yml (git-ignored) or ORCHESTRATOR_* env vars.
+# Run with: make live-spot
+- name: Automation Orchestrator live spot-checks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    __spot_project: aoc-test-spot-project
+    __spot_workflow: aoc-test-spot-workflow
+    __spot_user: aoc-test-spot-user
+    __spot_group: aoc-test-spot-group
+    __spot_integration: aoc-test-spot-llm
+    __spot_definition:
+      schema_version: "2.0.0"
+      name: "{{ __spot_workflow }}"
+      triggers:
+        - id: trigger_1
+          type: manual_trigger
+          parameters: {}
+      nodes:
+        - id: node_1
+          type: wait
+          parameters:
+            duration: 1
+      edges:
+        - from: trigger_1
+          to: node_1
+    __findings: {}
+
+  module_defaults:
+    group/kenmoini.automation_orchestrator_config.orchestrator:
+      orchestrator_host: "{{ orchestrator_hostname }}"
+      orchestrator_username: "{{ orchestrator_username | default(omit, true) }}"
+      orchestrator_password: "{{ orchestrator_password | default(omit, true) }}"
+      orchestrator_token: "{{ orchestrator_token | default(omit, true) }}"
+      validate_certs: "{{ orchestrator_validate_certs | default(false) }}"
+
+  pre_tasks:
+    - name: Load credentials from tests/auth.yml when present
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../auth.yml"
+      when: (playbook_dir ~ '/../auth.yml') is file
+      no_log: true
+      tags: always
+
+    - name: Fall back to environment variables
+      ansible.builtin.set_fact:
+        orchestrator_hostname: "{{ orchestrator_hostname | default(lookup('ansible.builtin.env', 'ORCHESTRATOR_HOST'), true) }}"
+        orchestrator_username: "{{ orchestrator_username | default(lookup('ansible.builtin.env', 'ORCHESTRATOR_USERNAME'), true) }}"
+        orchestrator_password: "{{ orchestrator_password | default(lookup('ansible.builtin.env', 'ORCHESTRATOR_PASSWORD'), true) }}"
+        orchestrator_validate_certs: >-
+          {{ orchestrator_validate_certs | default(lookup('ansible.builtin.env', 'ORCHESTRATOR_VERIFY_SSL') | default('false', true) | bool) }}
+      no_log: true
+      tags: always
+
+    - name: Require a hostname
+      ansible.builtin.assert:
+        that: orchestrator_hostname | length > 0
+        fail_msg: Set orchestrator_hostname in tests/auth.yml or export ORCHESTRATOR_HOST.
+      tags: always
+
+  tasks:
+    - name: Spot-check block
+      block:
+        - name: API version
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: /version
+          register: __version
+
+        - name: Record version
+          ansible.builtin.set_fact:
+            __findings: "{{ __findings | combine({'api_version': __version.json}) }}"
+
+        # ------------------------------------------------------------------
+        # 1. Workflow definition round-trip and export shape
+        # ------------------------------------------------------------------
+        - name: Create spot project
+          kenmoini.automation_orchestrator_config.project:
+            name: "{{ __spot_project }}"
+            description: Temporary project for live spot-checks
+          register: __project
+
+        - name: Create spot workflow
+          kenmoini.automation_orchestrator_config.workflow:
+            name: "{{ __spot_workflow }}"
+            project: "{{ __spot_project }}"
+            workflow_definition: "{{ __spot_definition }}"
+          register: __wf_create
+
+        - name: Re-apply the identical workflow (idempotency)
+          kenmoini.automation_orchestrator_config.workflow:
+            name: "{{ __spot_workflow }}"
+            project: "{{ __spot_project }}"
+            workflow_definition: "{{ __spot_definition }}"
+          register: __wf_again
+
+        - name: Read stored workflow with definition
+          kenmoini.automation_orchestrator_config.workflow_info:
+            project: "{{ __spot_project }}"
+            name: "{{ __spot_workflow }}"
+            include_definition: true
+          register: __wf_info
+
+        - name: Fetch export endpoint
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: "/workflows/{{ __wf_create.id }}/versions/{{ __wf_create.version }}/export"
+          register: __wf_export
+          ignore_errors: true
+
+        - name: Publish the workflow
+          kenmoini.automation_orchestrator_config.workflow:
+            name: "{{ __spot_workflow }}"
+            project: "{{ __spot_project }}"
+            publish: true
+          register: __wf_publish
+
+        - name: Record workflow findings
+          vars:
+            __stored_json: "{{ __wf_info.resources[0].workflow_definition | to_json(sort_keys=True) }}"
+            __export_json: "{{ __wf_export.json | default({}) }}"
+          ansible.builtin.set_fact:
+            __findings: >-
+              {{ __findings | combine({
+                'workflow_create_changed': __wf_create.changed,
+                'workflow_rerun_changed': __wf_again.changed,
+                'workflow_rerun_definition_changed': __wf_again.definition_changed,
+                'workflow_rerun_warnings': __wf_again.warnings | default([]),
+                'stored_definition_equals_sent': __stored_json == (__spot_definition | to_json(sort_keys=True)),
+                'stored_definition': __wf_info.resources[0].workflow_definition,
+                'export_status': __wf_export.status | default('error: ' ~ (__wf_export.msg | default(''))),
+                'export_top_level_keys': (__export_json.keys() | list) if __export_json is mapping else 'not a mapping',
+                'export_equals_stored_definition': (__export_json | to_json(sort_keys=True)) == __stored_json,
+                'publish_changed': __wf_publish.changed,
+                'published_version': __wf_publish.published_version}) }}
+
+        # ------------------------------------------------------------------
+        # 2. LLM provider model rows: discover / refresh behaviour
+        # ------------------------------------------------------------------
+        - name: Create llm_provider integration with an unreachable endpoint
+          kenmoini.automation_orchestrator_config.integration:
+            name: "{{ __spot_integration }}"
+            integration_type: llm_provider
+            configuration:
+              provider_hint: custom
+              base_url: https://llm.example.invalid/v1
+            discover: false
+          register: __integ
+          ignore_errors: true
+
+        - name: List model rows
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: "/integrations/{{ __integ.id }}/models"
+          register: __models
+          when: __integ.id is defined and __integ.id
+          ignore_errors: true
+
+        - name: Try refresh on the llm_provider integration
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: "/integrations/{{ __integ.id }}/refresh"
+            method: POST
+          register: __refresh
+          when: __integ.id is defined and __integ.id
+          ignore_errors: true
+
+        - name: Record integration findings
+          ansible.builtin.set_fact:
+            __findings: >-
+              {{ __findings | combine({
+                'llm_integration_create': ('ok' if __integ.id is defined and __integ.id else 'failed: ' ~ (__integ.msg | default(''))),
+                'llm_models_rows': (__models.json.resources | default([]) | length) if __models.json is defined
+                                   else ('error: ' ~ (__models.msg | default(''))),
+                'llm_refresh': (__refresh.json | default(__refresh.msg | default('skipped')))}) }}
+
+        # ------------------------------------------------------------------
+        # 3. Soft-delete name reuse (users and groups)
+        # ------------------------------------------------------------------
+        - name: Create spot group
+          kenmoini.automation_orchestrator_config.group:
+            name: "{{ __spot_group }}"
+
+        - name: Create spot user
+          kenmoini.automation_orchestrator_config.user:
+            username: "{{ __spot_user }}"
+            password: "SpotCheck-Temp-Passw0rd!"
+            groups: ["{{ __spot_group }}"]
+
+        - name: Delete spot user
+          kenmoini.automation_orchestrator_config.user:
+            username: "{{ __spot_user }}"
+            state: absent
+
+        - name: Re-create spot user with the same name
+          kenmoini.automation_orchestrator_config.user:
+            username: "{{ __spot_user }}"
+            password: "SpotCheck-Temp-Passw0rd!"
+            groups: []
+          register: __user_recreate
+          ignore_errors: true
+
+        - name: Delete spot group
+          kenmoini.automation_orchestrator_config.group:
+            name: "{{ __spot_group }}"
+            state: absent
+
+        - name: Re-create spot group with the same name
+          kenmoini.automation_orchestrator_config.group:
+            name: "{{ __spot_group }}"
+          register: __group_recreate
+          ignore_errors: true
+
+        - name: Record soft-delete findings
+          ansible.builtin.set_fact:
+            __findings: >-
+              {{ __findings | combine({
+                'user_name_reuse_after_delete': ('ok' if __user_recreate is succeeded
+                                                 else 'failed: ' ~ (__user_recreate.msg | default(''))),
+                'group_name_reuse_after_delete': ('ok' if __group_recreate is succeeded
+                                                  else 'failed: ' ~ (__group_recreate.msg | default('')))}) }}
+
+        # ------------------------------------------------------------------
+        # 4. Credential types and role/policy scope values on this instance
+        # ------------------------------------------------------------------
+        - name: List credential types
+          kenmoini.automation_orchestrator_config.credential_type_info:
+          register: __ctypes
+
+        - name: List roles (system and project scoped)
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: /roles
+            return_all_pages: true
+          register: __roles
+
+        - name: Probe a list endpoint without documented pagination params
+          kenmoini.automation_orchestrator_config.api:
+            endpoint: /identity_providers
+            query_params:
+              limit: 100
+          register: __idp_limit
+          ignore_errors: true
+
+        - name: Record catalogue findings
+          ansible.builtin.set_fact:
+            __findings: >-
+              {{ __findings | combine({
+                'credential_type_names': __ctypes.resources | map(attribute='name') | list,
+                'builtin_role_names_and_scopes': __roles.json.resources | default([]) | map('dict2items')
+                                                 | map('selectattr', 'key', 'in', ['name', 'scope']) | map('items2dict') | list,
+                'identity_providers_limit_param': ('accepted (' ~ (__idp_limit.status | string) ~ ')') if __idp_limit is succeeded
+                                                  else ('rejected: ' ~ (__idp_limit.msg | default('')))}) }}
+
+      always:
+        - name: Cleanup spot objects
+          block:
+            - name: Delete spot user
+              kenmoini.automation_orchestrator_config.user:
+                username: "{{ __spot_user }}"
+                state: absent
+            - name: Delete spot group
+              kenmoini.automation_orchestrator_config.group:
+                name: "{{ __spot_group }}"
+                state: absent
+            - name: Delete spot integration
+              kenmoini.automation_orchestrator_config.integration:
+                name: "{{ __spot_integration }}"
+                state: absent
+            - name: Delete spot workflow
+              kenmoini.automation_orchestrator_config.workflow:
+                name: "{{ __spot_workflow }}"
+                project: "{{ __spot_project }}"
+                state: absent
+            - name: Delete spot project
+              kenmoini.automation_orchestrator_config.project:
+                name: "{{ __spot_project }}"
+                state: absent
+          rescue:
+            - name: Cleanup problem
+              ansible.builtin.debug:
+                msg: "Cleanup hit an error; inspect aoc-test-spot-* objects manually: {{ ansible_failed_result.msg | default('unknown') }}"
+
+        - name: Spot-check findings
+          ansible.builtin.debug:
+            var: __findings
+
+        - name: Write findings to tests/output/spot_findings.json
+          ansible.builtin.copy:
+            dest: "{{ playbook_dir }}/../output/spot_findings.json"
+            content: "{{ __findings | to_nice_json(indent=2) }}\n"
+            mode: "0600"
+...

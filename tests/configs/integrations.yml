@@ -7,7 +7,7 @@ orchestrator_integrations:
     description: Live test MCP server integration
     integration_type: mcp_server
     configuration:
-      base_url: https://mcp.example.invalid
+      base_url: https://example.com/mcp
     validate: false
     discover: false
 ...

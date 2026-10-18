@@ -1,15 +1,16 @@
 {
   "schema_version": "2.0.0",
-  "name": "aoc-test-wait",
+  "name": "aoc-test-wait-workflow",
   "triggers": [
     {
-      "id": "trigger-1",
-      "type": "manual"
+      "id": "trigger_1",
+      "type": "manual_trigger",
+      "parameters": {}
     }
   ],
   "nodes": [
     {
-      "id": "node-1",
+      "id": "node_1",
       "type": "wait",
       "parameters": {
         "duration": 1
@@ -18,8 +19,8 @@
   ],
   "edges": [
     {
-      "source": "trigger-1",
-      "target": "node-1"
+      "from": "trigger_1",
+      "to": "node_1"
     }
   ]
 }

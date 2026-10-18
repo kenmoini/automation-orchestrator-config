@@ -127,7 +127,7 @@ orchestrator_users:
 ---
 orchestrator_credentials:
   - name: demo-credential
-    credential_type: Generic
+    credential_type: HTTP Bearer Token
     project: demo-project
     inputs:
       token: "{{ vault_demo_token }}"

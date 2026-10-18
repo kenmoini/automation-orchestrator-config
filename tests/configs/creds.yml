@@ -2,7 +2,7 @@
 orchestrator_credentials:
   - name: aoc-test-credential
     description: Live test credential
-    credential_type: Generic
+    credential_type: HTTP Bearer Token
     project: aoc-test-project-1
     inputs:
       token: changeme

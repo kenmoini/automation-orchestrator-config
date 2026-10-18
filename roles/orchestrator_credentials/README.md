@@ -95,7 +95,7 @@ This also speeds up the overall role.
 ---
 orchestrator_credentials:
   - name: openai-key
-    credential_type: API Key
+    credential_type: LLM Provider
     project: Platform Team
     inputs:
       api_key: '{{ vault_openai_key }}'
@@ -112,7 +112,7 @@ orchestrator_credentials:
   "orchestrator_credentials": [
     {
       "name": "openai-key",
-      "credential_type": "API Key",
+      "credential_type": "LLM Provider",
       "project": "Platform Team",
       "inputs": {
         "api_key": "{{ vault_openai_key }}"

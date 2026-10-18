@@ -27,9 +27,9 @@ def _definition(**kw):
     obj = {
         "schema_version": "2.0.0",
         "name": "deploy",
-        "triggers": [{"id": "t1", "type": "manual"}],
+        "triggers": [{"id": "t1", "type": "manual_trigger"}],
         "nodes": [{"id": "n1", "type": "start"}, {"id": "n2", "type": "end"}],
-        "edges": [{"source": "n1", "target": "n2"}],
+        "edges": [{"from": "n1", "to": "n2"}],
     }
     obj.update(kw)
     return obj
@@ -207,9 +207,9 @@ def test_unchanged_definition_no_patch_in_run_and_check_mode(fake_api, check_mod
     fake_api.add("GET", ITEM, 200, _with_version(_definition()))
     # Same content, different key order and no schema_version/name: still unchanged after normalization.
     given = {
-        "edges": [{"target": "n2", "source": "n1"}],
+        "edges": [{"to": "n2", "from": "n1"}],
         "nodes": [{"type": "start", "id": "n1"}, {"id": "n2", "type": "end"}],
-        "triggers": [{"type": "manual", "id": "t1"}],
+        "triggers": [{"type": "manual_trigger", "id": "t1"}],
     }
     result = run_module(module_under_test.main, dict(BASE, workflow_definition=given, description="old", _ansible_check_mode=check_mode), fake_api)
     assert result["changed"] is False
@@ -242,7 +242,7 @@ def test_changed_definition_patch_includes_expected_version(fake_api):
         "change_description": "drop edge",
         "expected_version": 2,
     }
-    assert result["diff"]["before"]["workflow_definition"]["edges"] == [{"source": "n1", "target": "n2"}]
+    assert result["diff"]["before"]["workflow_definition"]["edges"] == [{"from": "n1", "to": "n2"}]
     assert result["diff"]["after"]["workflow_definition"]["edges"] == []
     assert result["diff"]["before"]["description"] == "old"
 
