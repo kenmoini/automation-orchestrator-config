@@ -1,0 +1,13 @@
+---
+# An mcp_server integration with a bogus base_url and without validate/discover,
+# so creation does not depend on reachability. Integrations with models/tools
+# (which need a reachable provider) are NOT exercised by the live test.
+orchestrator_integrations:
+  - name: aoc-test-integration
+    description: Live test MCP server integration
+    integration_type: mcp_server
+    configuration:
+      base_url: https://mcp.example.invalid
+    validate: false
+    discover: false
+...

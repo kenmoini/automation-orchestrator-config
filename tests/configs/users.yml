@@ -1,0 +1,13 @@
+---
+# No explicit state: the dispatcher default (orchestrator_state) decides, so the
+# cleanup playbook can delete these with orchestrator_state=absent.
+orchestrator_users:
+  - username: aoc-test-user
+    password: changeme-changeme-1
+    update_password: on_create
+    email: aoc-test-user@example.com
+    first_name: Test
+    last_name: User
+    groups:
+      - aoc-test-group
+...

@@ -1,0 +1,8 @@
+---
+orchestrator_launch_executions:
+  - workflow: aoc-test-wait-workflow
+    project: aoc-test-project-1
+    use_published: true
+    wait: true
+    timeout: 120
+...

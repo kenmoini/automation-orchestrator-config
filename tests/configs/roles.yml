@@ -1,0 +1,8 @@
+---
+orchestrator_roles:
+  - name: aoc-test-role
+    description: Live test role
+    project: aoc-test-project-1
+    policies:
+      - aoc-test-policy
+...

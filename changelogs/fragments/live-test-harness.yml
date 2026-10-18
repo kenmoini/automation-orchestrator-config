@@ -1,0 +1,4 @@
+---
+trivial:
+  - Add the live integration test harness (tests/configure_orchestrator.yml, tests/cleanup_orchestrator.yml, tests/configs).
+...

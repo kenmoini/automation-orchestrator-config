@@ -12,7 +12,7 @@ COVERAGE ?=
 SYNC_ROOT ?= $(patsubst %/,%,$(or $(TMPDIR),/tmp))/kenmoini-aoc-sync
 SYNC_DIR := $(SYNC_ROOT)/ansible_collections/kenmoini/automation_orchestrator_config
 
-.PHONY: venv link sync lint sanity unit pytest build install changelog live live-check live-cleanup
+.PHONY: venv link sync lint sanity unit pytest build install changelog live live-check live-cleanup live-spot
 
 venv:
 	uv venv .venv --python $(PY)
@@ -59,11 +59,20 @@ install: build
 changelog:
 	.venv/bin/antsibull-changelog lint
 
-live:
-	@echo "defined in Task 27"
+LIVE_ENV = ANSIBLE_COLLECTIONS_PATH=$(CURDIR)/build ANSIBLE_LOCAL_TEMP=$(ANSIBLE_LOCAL_TEMP)
 
-live-check:
-	@echo "defined in Task 27"
+live: link
+	$(LIVE_ENV) .venv/bin/ansible-playbook tests/configure_orchestrator.yml
 
-live-cleanup:
-	@echo "defined in Task 27"
+live-check: link
+	$(LIVE_ENV) .venv/bin/ansible-playbook tests/configure_orchestrator.yml --check --diff
+
+live-cleanup: link
+	$(LIVE_ENV) .venv/bin/ansible-playbook tests/cleanup_orchestrator.yml
+
+live-spot: link
+	@if [ -f tests/live/spot_checks.yml ]; then \
+		$(LIVE_ENV) .venv/bin/ansible-playbook tests/live/spot_checks.yml; \
+	else \
+		echo "tests/live/spot_checks.yml not present"; \
+	fi

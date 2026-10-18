@@ -1,0 +1,11 @@
+---
+orchestrator_policies:
+  - name: aoc-test-policy
+    description: Live test policy
+    project: aoc-test-project-1
+    statements:
+      - effect: allow
+        actions:
+          - workflow:read
+        scope: project
+...

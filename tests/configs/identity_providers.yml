@@ -1,0 +1,13 @@
+---
+orchestrator_identity_providers:
+  - name: aoc-test-idp
+    description: Live test OIDC identity provider
+    enabled: false
+    configuration:
+      issuer_url: https://idp.example.invalid
+      client_id: aoc-test
+      client_secret: changeme
+      redirect_uri: https://orchestrator.example.invalid/callback
+    update_secrets: false
+    test: false
+...

@@ -1,0 +1,10 @@
+---
+# Copy to tests/auth.yml (gitignored) and fill in, or export the
+# ORCHESTRATOR_HOST, ORCHESTRATOR_USERNAME, ORCHESTRATOR_PASSWORD and
+# ORCHESTRATOR_VERIFY_SSL environment variables instead.
+orchestrator_hostname: https://orchestrator.example.invalid
+orchestrator_username: admin
+orchestrator_password: changeme
+orchestrator_validate_certs: false
+# orchestrator_token: changeme
+...

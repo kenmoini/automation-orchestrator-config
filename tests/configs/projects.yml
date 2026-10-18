@@ -1,0 +1,7 @@
+---
+orchestrator_projects:
+  - name: aoc-test-project-1
+    description: Live test project
+    labels:
+      env: test
+...

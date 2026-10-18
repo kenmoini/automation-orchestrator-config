@@ -1,0 +1,40 @@
+---
+# Live integration test: configure a lab Automation Orchestrator from tests/configs.
+# Authentication comes from tests/auth.yml (gitignored) or the ORCHESTRATOR_* environment variables.
+- name: Configure Automation Orchestrator (live test)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    orchestrator_configuration_collect_logs: true
+  pre_tasks:
+    - name: Include authentication variables from tests/auth.yml when present
+      ansible.builtin.include_vars: "{{ playbook_dir }}/auth.yml"
+      when: (playbook_dir ~ '/auth.yml') is file
+      tags: always
+
+    - name: Default authentication variables from the environment
+      ansible.builtin.set_fact:
+        orchestrator_hostname: "{{ orchestrator_hostname | default(lookup('env', 'ORCHESTRATOR_HOST')) }}"
+        orchestrator_username: "{{ orchestrator_username | default(lookup('env', 'ORCHESTRATOR_USERNAME')) }}"
+        orchestrator_password: "{{ orchestrator_password | default(lookup('env', 'ORCHESTRATOR_PASSWORD')) }}"
+        orchestrator_validate_certs: "{{ orchestrator_validate_certs | default(lookup('env', 'ORCHESTRATOR_VERIFY_SSL') | default('false', true) | bool) }}"
+      no_log: true
+      tags: always
+
+    - name: Fail fast without a hostname
+      ansible.builtin.assert:
+        that: orchestrator_hostname | default('') | length > 0
+        fail_msg: >-
+          No Orchestrator hostname. Create tests/auth.yml (see tests/auth.yml.example)
+          or set the ORCHESTRATOR_HOST, ORCHESTRATOR_USERNAME and ORCHESTRATOR_PASSWORD environment variables.
+      tags: always
+
+    - name: Include test configuration variables
+      ansible.builtin.include_vars:
+        dir: "{{ playbook_dir }}/configs"
+        extensions: [yml]
+      tags: always
+  roles:
+    - role: kenmoini.automation_orchestrator_config.dispatch
+...

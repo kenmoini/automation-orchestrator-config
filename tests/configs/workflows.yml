@@ -1,0 +1,8 @@
+---
+orchestrator_workflows:
+  - name: aoc-test-wait-workflow
+    description: Live test workflow that waits one second
+    project: aoc-test-project-1
+    definition_file: "{{ playbook_dir }}/files/aoc-test-wait.json"
+    publish: true
+...

@@ -1,0 +1,59 @@
+---
+# Live integration test cleanup: delete everything tests/configs created, in reverse order.
+# Items in tests/configs carry no explicit state, so orchestrator_state=absent deletes them.
+# Settings cannot be deleted, SA credentials vanish with their service account, and action roles have nothing to delete.
+- name: Remove live test configuration from Automation Orchestrator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    orchestrator_state: absent
+    orchestrator_configuration_collect_logs: true
+    orchestrator_configuration_dispatcher_exclude_roles:
+      - orchestrator_execution_launch
+      - orchestrator_approval_decisions
+      - orchestrator_settings
+      - orchestrator_service_account_credentials
+  pre_tasks:
+    - name: Include authentication variables from tests/auth.yml when present
+      ansible.builtin.include_vars: "{{ playbook_dir }}/auth.yml"
+      when: (playbook_dir ~ '/auth.yml') is file
+      tags: always
+
+    - name: Default authentication variables from the environment
+      ansible.builtin.set_fact:
+        orchestrator_hostname: "{{ orchestrator_hostname | default(lookup('env', 'ORCHESTRATOR_HOST')) }}"
+        orchestrator_username: "{{ orchestrator_username | default(lookup('env', 'ORCHESTRATOR_USERNAME')) }}"
+        orchestrator_password: "{{ orchestrator_password | default(lookup('env', 'ORCHESTRATOR_PASSWORD')) }}"
+        orchestrator_validate_certs: "{{ orchestrator_validate_certs | default(lookup('env', 'ORCHESTRATOR_VERIFY_SSL') | default('false', true) | bool) }}"
+      no_log: true
+      tags: always
+
+    - name: Fail fast without a hostname
+      ansible.builtin.assert:
+        that: orchestrator_hostname | default('') | length > 0
+        fail_msg: >-
+          No Orchestrator hostname. Create tests/auth.yml (see tests/auth.yml.example)
+          or set the ORCHESTRATOR_HOST, ORCHESTRATOR_USERNAME and ORCHESTRATOR_PASSWORD environment variables.
+      tags: always
+
+    - name: Include test configuration variables
+      ansible.builtin.include_vars:
+        dir: "{{ playbook_dir }}/configs"
+        extensions: [yml]
+      tags: always
+
+    - name: Load the dispatch role defaults
+      ansible.builtin.include_role:
+        name: kenmoini.automation_orchestrator_config.dispatch
+        tasks_from: vars_only
+        public: true
+      tags: always
+
+    - name: Reverse the dispatcher role order
+      ansible.builtin.set_fact:
+        orchestrator_configuration_dispatcher_roles: "{{ orchestrator_configuration_dispatcher_roles | reverse | list }}"
+      tags: always
+  roles:
+    - role: kenmoini.automation_orchestrator_config.dispatch
+...
