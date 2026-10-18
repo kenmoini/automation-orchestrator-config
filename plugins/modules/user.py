@@ -65,7 +65,8 @@ options:
   groups:
     description:
       - Names or IDs of the groups the user belongs to.
-      - When set, the memberships of the user are made to match this list. Memberships granted by an identity provider are always kept.
+      - When set, the memberships of the user are made to match this list. Memberships granted by an identity provider are always kept,
+        as is the implicit built-in C(authenticated) group that the server adds to every user.
       - An empty list removes all manual memberships. When the user is created, an empty list also skips the default C(users) group.
       - When not set, memberships are left untouched, and a new user joins the default C(users) group.
     type: list
@@ -198,6 +199,17 @@ def _group_names_for_create(module, values):
     return names
 
 
+# Built-in groups whose membership the server manages itself; it ignores attempts to remove them.
+IMPLICIT_GROUPS = frozenset(["authenticated"])
+
+
+def _is_implicit(group):
+    """True for memberships the server owns: identity-provider sourced, or the implicit built-in groups."""
+    if group.get("is_builtin") and group.get("name") in IMPLICIT_GROUPS:
+        return True
+    return any(src.get("type") != "manual" for src in group.get("membership_sources") or [])
+
+
 def _reconcile_groups(module, user, values):
     """Make the manual group memberships of ``user`` match ``values``; return (changed, group names)."""
     context = "Failed to update groups of user '{0}'".format(user.get("username"))
@@ -216,7 +228,7 @@ def _reconcile_groups(module, user, values):
                 name = obj["name"]
         target[group_id] = name
     for group in current:
-        if any(src.get("type") != "manual" for src in group.get("membership_sources") or []):
+        if _is_implicit(group):
             target[group["id"]] = group.get("name")
     if set(target) == set(current_names):
         return False, sorted(g.get("name") or "" for g in current)
@@ -233,7 +245,7 @@ def main():
         username=dict(type="str", required=True),
         new_username=dict(type="str"),
         password=dict(type="str", no_log=True),
-        update_password=dict(type="str", default="on_create", choices=["on_create", "always"]),
+        update_password=dict(type="str", default="on_create", choices=["on_create", "always"], no_log=False),
         email=dict(type="str"),
         first_name=dict(type="str"),
         last_name=dict(type="str"),

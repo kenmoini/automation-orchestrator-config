@@ -234,6 +234,28 @@ def test_user_groups_preserve_idp_memberships(fake_api):
     assert "idp-admins" in result["groups"]
 
 
+def test_user_groups_preserve_implicit_authenticated_group(fake_api):
+    # The server adds every user to the built-in "authenticated" group and ignores attempts to remove it.
+    implicit = dict(_member(G_IDP, "authenticated"), is_builtin=True)
+    fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": [_member(G_OPS, "ops"), implicit]})
+    result = run_module(user_module.main, {"username": "alice", "groups": [G_OPS]}, fake_api)
+    assert result["changed"] is False
+    assert not _by_method(fake_api, "PUT")
+    assert result["groups"] == ["authenticated", "ops"]
+
+
+def test_user_groups_other_builtin_groups_are_still_managed(fake_api):
+    # A non-implicit built-in group ("users") is removed when it is not requested; "authenticated" stays.
+    implicit = dict(_member(G_IDP, "authenticated"), is_builtin=True)
+    fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": [_member(G_OPS, "ops"), implicit, dict(_member(G_USERS, "users"), is_builtin=True)]})
+    fake_api.add("PUT", LIST + "/u1/groups", 200, {})
+    result = run_module(user_module.main, {"username": "alice", "groups": [G_OPS]}, fake_api)
+    assert result["changed"] is True
+    assert _by_method(fake_api, "PUT")[0]["body"] == {"group_ids": sorted([G_OPS, G_IDP])}
+
+
 def test_user_groups_check_mode_no_put(fake_api):
     fake_api.add("GET", GROUPS + "/" + G_OPS, 200, {"id": G_OPS, "name": "ops"})
     fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})

@@ -246,6 +246,20 @@ def _resolve_configuration(module, configuration):
     return resolved
 
 
+# URL fields the server may normalise (it stores issuer_url with a trailing slash).
+URL_FIELDS = ("issuer_url", "redirect_uri", "authorization_endpoint", "token_endpoint", "userinfo_endpoint", "jwks_uri", "end_session_endpoint")
+
+
+def _match_url_normalisation(configuration, existing):
+    """Adopt the server's spelling of URL fields that differ from ``configuration`` only by a trailing slash."""
+    current = (existing or {}).get("configuration") or {}
+    for field in URL_FIELDS:
+        wanted, stored = configuration.get(field), current.get(field)
+        if isinstance(wanted, str) and isinstance(stored, str) and wanted != stored and wanted.rstrip("/") == stored.rstrip("/"):
+            configuration[field] = stored
+    return configuration
+
+
 def _run_test(module, name, desired, existing):
     """Test the OIDC configuration; fail when it is not successful; return the test result."""
     configuration = copy.deepcopy((existing or {}).get("configuration") or {})
@@ -295,6 +309,8 @@ def main():
         module.fail_json(msg="configuration is required to create identity provider '{0}'".format(name))
 
     configuration = _resolve_configuration(module, params["configuration"]) if params["configuration"] is not None else None
+    if configuration is not None and existing is not None:
+        configuration = _match_url_normalisation(configuration, existing)
     desired = module.build_desired(
         {
             "name": name,

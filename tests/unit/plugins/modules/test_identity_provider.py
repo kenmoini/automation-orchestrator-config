@@ -170,6 +170,22 @@ def test_group_mapping_resolved_form_is_idempotent(fake_api):
     assert _writes(fake_api) == []
 
 
+def test_issuer_url_trailing_slash_is_not_drift(fake_api):
+    # The server stores issuer_url with a trailing slash; that must not show as a change.
+    fake_api.add("GET", LIST, 200, _list(_idp(configuration=dict(OIDC, issuer_url="https://idp.example.com/"))))
+    result = run_module(module_under_test.main, dict(BASE, configuration=dict(CONF)), fake_api)
+    assert result["changed"] is False
+    assert _writes(fake_api) == []
+
+
+def test_issuer_url_real_change_still_patches(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_idp(configuration=dict(OIDC, issuer_url="https://idp.example.com/"))))
+    fake_api.add("PATCH", ITEM, 200, _idp())
+    result = run_module(module_under_test.main, dict(BASE, configuration=dict(CONF, issuer_url="https://other.example.com")), fake_api)
+    assert result["changed"] is True
+    assert _calls(fake_api, "PATCH")[0]["body"]["configuration"]["issuer_url"] == "https://other.example.com"
+
+
 def test_full_configuration_sent_on_subkey_change(fake_api):
     fake_api.add("GET", LIST, 200, _list(_idp()))
     fake_api.add("PATCH", ITEM, 200, _idp())
