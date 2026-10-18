@@ -123,16 +123,16 @@ The roles run in this order. A role only runs when its variable is defined. Each
 | # | Role | Variable | Tags |
 | --- | ---- | -------- | ---- |
 | 1 | `orchestrator_settings` | `orchestrator_settings` | `settings`, `orchestrator_settings` |
-| 2 | `orchestrator_identity_providers` | `orchestrator_identity_providers` | `identity_providers`, `orchestrator_identity_providers` |
-| 3 | `orchestrator_groups` | `orchestrator_groups` | `groups`, `orchestrator_groups` |
+| 2 | `orchestrator_groups` | `orchestrator_groups` | `groups`, `orchestrator_groups` |
+| 3 | `orchestrator_identity_providers` | `orchestrator_identity_providers` | `identity_providers`, `orchestrator_identity_providers` |
 | 4 | `orchestrator_users` | `orchestrator_users` | `users`, `orchestrator_users` |
 | 5 | `orchestrator_projects` | `orchestrator_projects` | `projects`, `orchestrator_projects` |
 | 6 | `orchestrator_policies` | `orchestrator_policies` | `policies`, `orchestrator_policies` |
 | 7 | `orchestrator_roles` | `orchestrator_roles` | `roles`, `orchestrator_roles` |
-| 8 | `orchestrator_role_assignments` | `orchestrator_role_assignments` | `role_assignments`, `orchestrator_role_assignments` |
-| 9 | `orchestrator_credentials` | `orchestrator_credentials` | `credentials`, `orchestrator_credentials` |
-| 10 | `orchestrator_integrations` | `orchestrator_integrations` | `integrations`, `orchestrator_integrations` |
-| 11 | `orchestrator_service_accounts` | `orchestrator_service_accounts` | `service_accounts`, `orchestrator_service_accounts` |
+| 8 | `orchestrator_service_accounts` | `orchestrator_service_accounts` | `service_accounts`, `orchestrator_service_accounts` |
+| 9 | `orchestrator_role_assignments` | `orchestrator_role_assignments` | `role_assignments`, `orchestrator_role_assignments` |
+| 10 | `orchestrator_credentials` | `orchestrator_credentials` | `credentials`, `orchestrator_credentials` |
+| 11 | `orchestrator_integrations` | `orchestrator_integrations` | `integrations`, `orchestrator_integrations` |
 | 12 | `orchestrator_service_account_credentials` | `orchestrator_service_account_credentials` | `service_account_credentials`, `orchestrator_service_account_credentials` |
 | 13 | `orchestrator_workflows` | `orchestrator_workflows` | `workflows`, `orchestrator_workflows` |
 | 14 | `orchestrator_execution_launch` | `orchestrator_launch_executions` | `execution_launch`, `orchestrator_execution_launch` |

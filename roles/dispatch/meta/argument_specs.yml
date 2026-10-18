@@ -16,16 +16,16 @@ argument_specs:
             tags:
               - settings
               - orchestrator_settings
-          - role: orchestrator_identity_providers
-            var: orchestrator_identity_providers
-            tags:
-              - identity_providers
-              - orchestrator_identity_providers
           - role: orchestrator_groups
             var: orchestrator_groups
             tags:
               - groups
               - orchestrator_groups
+          - role: orchestrator_identity_providers
+            var: orchestrator_identity_providers
+            tags:
+              - identity_providers
+              - orchestrator_identity_providers
           - role: orchestrator_users
             var: orchestrator_users
             tags:
@@ -46,6 +46,11 @@ argument_specs:
             tags:
               - roles
               - orchestrator_roles
+          - role: orchestrator_service_accounts
+            var: orchestrator_service_accounts
+            tags:
+              - service_accounts
+              - orchestrator_service_accounts
           - role: orchestrator_role_assignments
             var: orchestrator_role_assignments
             tags:
@@ -61,11 +66,6 @@ argument_specs:
             tags:
               - integrations
               - orchestrator_integrations
-          - role: orchestrator_service_accounts
-            var: orchestrator_service_accounts
-            tags:
-              - service_accounts
-              - orchestrator_service_accounts
           - role: orchestrator_service_account_credentials
             var: orchestrator_service_account_credentials
             tags:

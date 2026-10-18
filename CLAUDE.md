@@ -56,6 +56,7 @@ Roles (18): `collect_async_status`, `dispatch`, `global_vars`, `orchestrator_app
 - Internal loop variables are double-underscore prefixed: `__orchestrator_<resource>_item`.
 - Identifying-key rule: the module task, loop label and README table use the resource's identifying key (`username` for users, `identifier` for service account credentials), not always `name`, and that key must be captured by `collect_async_status/tasks/handle_error.yml`.
 - A new role must be added to the dispatcher list in `roles/dispatch/defaults/main.yml`.
+- Dispatch order (`roles/dispatch/defaults/main.yml`, `vars/main.yml`, `meta/argument_specs.yml` and the dispatch README table must agree): settings, groups, identity_providers, users, projects, policies, roles, service_accounts, role_assignments, credentials, integrations, service_account_credentials, workflows, execution_launch, approval_decisions. Groups precede identity providers (group mappings) and service accounts precede role assignments (service-account principals). `tests/cleanup_orchestrator.yml` runs the list reversed.
 
 ### Async Task Pattern
 

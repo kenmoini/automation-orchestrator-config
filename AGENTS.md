@@ -56,6 +56,7 @@ All resource roles must follow the async block pattern:
 ### Dispatch Integration
 
 - New roles must be added to the dispatcher list in `roles/dispatch/defaults/main.yml`, in dependency order
+- Current order: settings, groups, identity_providers, users, projects, policies, roles, service_accounts, role_assignments, credentials, integrations, service_account_credentials, workflows, execution_launch, approval_decisions (keep `vars/main.yml`, `meta/argument_specs.yml` and the dispatch README table in sync)
 - The entry must specify `role`, `var`, and `tags` at minimum, and the dispatch README table must be updated
 
 ### Documentation

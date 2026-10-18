@@ -201,16 +201,16 @@ Item `state` defaults to `orchestrator_state | default('present')`.
 | Role | List var | Dispatch order / tag |
 |---|---|---|
 | `orchestrator_settings` | `orchestrator_settings` (dict or list) | 1 `settings` |
-| `orchestrator_identity_providers` | `orchestrator_identity_providers` | 2 `identity_providers` |
-| `orchestrator_groups` | `orchestrator_groups` | 3 `groups` |
+| `orchestrator_groups` | `orchestrator_groups` | 2 `groups` |
+| `orchestrator_identity_providers` | `orchestrator_identity_providers` | 3 `identity_providers` |
 | `orchestrator_users` | `orchestrator_users` | 4 `users` |
 | `orchestrator_projects` | `orchestrator_projects` | 5 `projects` |
 | `orchestrator_policies` | `orchestrator_policies` | 6 `policies` |
 | `orchestrator_roles` | `orchestrator_roles` | 7 `roles` |
-| `orchestrator_role_assignments` | `orchestrator_role_assignments` | 8 `role_assignments` |
-| `orchestrator_credentials` | `orchestrator_credentials` | 9 `credentials` |
-| `orchestrator_integrations` | `orchestrator_integrations` | 10 `integrations` |
-| `orchestrator_service_accounts` | `orchestrator_service_accounts` | 11 `service_accounts` |
+| `orchestrator_service_accounts` | `orchestrator_service_accounts` | 8 `service_accounts` |
+| `orchestrator_role_assignments` | `orchestrator_role_assignments` | 9 `role_assignments` |
+| `orchestrator_credentials` | `orchestrator_credentials` | 10 `credentials` |
+| `orchestrator_integrations` | `orchestrator_integrations` | 11 `integrations` |
 | `orchestrator_service_account_credentials` | `orchestrator_service_account_credentials` | 12 `service_account_credentials` |
 | `orchestrator_workflows` | `orchestrator_workflows` | 13 `workflows` |
 | `orchestrator_execution_launch` | `orchestrator_launch_executions` | 14 `execution_launch` |

@@ -1,16 +1,16 @@
 ---
 orchestrator_configuration_all_vars:
   - orchestrator_settings
-  - orchestrator_identity_providers
   - orchestrator_groups
+  - orchestrator_identity_providers
   - orchestrator_users
   - orchestrator_projects
   - orchestrator_policies
   - orchestrator_roles
+  - orchestrator_service_accounts
   - orchestrator_role_assignments
   - orchestrator_credentials
   - orchestrator_integrations
-  - orchestrator_service_accounts
   - orchestrator_service_account_credentials
   - orchestrator_workflows
   - orchestrator_launch_executions

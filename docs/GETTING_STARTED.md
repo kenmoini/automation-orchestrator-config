@@ -144,11 +144,11 @@ orchestrator_workflows:
 ...
 ```
 
-The `definition_file` is JSON or YAML, read on the controller. Alternatively set `workflow_definition` to an inline dictionary. The dispatch role applies the roles in dependency order (groups before users, projects before credentials and workflows), so the file names do not matter.
+The `definition_file` is JSON or YAML, read on the controller. Alternatively set `workflow_definition` to an inline dictionary. The dispatch role applies the roles in dependency order (groups before identity providers and users, projects before credentials and workflows, service accounts before role assignments), so the file names do not matter.
 
 ## Understanding the dispatch role
 
-The dispatch role runs only the roles whose list variable is defined, in this order: settings, identity providers, groups, users, projects, policies, roles, role assignments, credentials, integrations, service accounts, service account credentials, workflows, execution launch, approval decisions. See the [dispatch README](../roles/dispatch/README.md) for the exact table.
+The dispatch role runs only the roles whose list variable is defined, in this order: settings, groups, identity providers, users, projects, policies, roles, service accounts, role assignments, credentials, integrations, service account credentials, workflows, execution launch, approval decisions. See the [dispatch README](../roles/dispatch/README.md) for the exact table.
 
 ### Using tags
 
