@@ -307,3 +307,17 @@ def test_strip_secrets_returns_copy():
     assert obj["password"] == "x"
     assert strip_secrets(None) is None
     assert strip_secrets({"token": "t"}, secret_fields=("token",)) == {"token": SECRET_PLACEHOLDER}
+
+
+def test_exit_info_strip_defaults_false_keeps_schema_inputs(fake_api):
+    module = make_module(fake_api)
+    with pytest.raises(AnsibleExitJson) as exc:
+        module.exit_info([{"id": "x", "inputs": {"fields": []}, "password": "p"}], strip_defaults=False)
+    assert exc.value.kwargs["resources"] == [{"id": "x", "inputs": {"fields": []}, "password": "p"}]
+
+
+def test_exit_info_strips_defaults_by_default(fake_api):
+    module = make_module(fake_api)
+    with pytest.raises(AnsibleExitJson) as exc:
+        module.exit_info([{"id": "x", "inputs": {"a": 1}}])
+    assert exc.value.kwargs["resources"] == [{"id": "x", "inputs": SECRET_PLACEHOLDER}]

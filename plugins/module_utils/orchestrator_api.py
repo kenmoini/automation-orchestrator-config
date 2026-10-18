@@ -622,9 +622,12 @@ class OrchestratorModule(AnsibleModule):
             self.fail_api(err, "Failed to delete {0} '{1}'".format(label, _display_name(existing)))
         return True
 
-    def exit_info(self, resources, secret_fields=()):
-        """Exit an ``_info`` module with ``changed=False`` and ``resources`` with secrets stripped."""
-        mask = tuple(DEFAULT_SECRET_FIELDS) + tuple(secret_fields)
+    def exit_info(self, resources, secret_fields=(), strip_defaults=True):
+        """Exit an ``_info`` module with ``changed=False`` and ``resources`` with secrets stripped.
+
+        ``strip_defaults=False`` skips ``DEFAULT_SECRET_FIELDS`` (for schemas such as credential type ``inputs``) and masks only ``secret_fields``.
+        """
+        mask = (tuple(DEFAULT_SECRET_FIELDS) if strip_defaults else ()) + tuple(secret_fields)
         self.exit_json(changed=False, resources=[strip_secrets(r, mask) for r in resources])
 
     def exit_result(self, changed, obj=None, **extra):
