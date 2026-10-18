@@ -129,6 +129,18 @@ def test_full_field_sends_secret_when_update_secrets_true(fake_api):
     assert body == {"configuration": {"issuer_url": "https://new", "client_id": "abc", "client_secret": "new"}}
 
 
+def test_full_field_missing_existing_drops_secret_when_update_secrets_false(fake_api):
+    module = make_module(fake_api)
+    desired = {"configuration": {"client_id": "a", "client_secret": "s"}}
+    kwargs = dict(full_fields=("configuration",), secret_fields=("client_secret",))
+
+    for existing in ({"id": OID}, {"id": OID, "configuration": None}, {"id": OID, "configuration": "junk"}):
+        assert module.compute_patch(existing, desired, update_secrets=False, **kwargs) == {"configuration": {"client_id": "a"}}
+        assert module.compute_patch(existing, desired, update_secrets=True, **kwargs) == {"configuration": {"client_id": "a", "client_secret": "s"}}
+    # only a secret supplied and not updating secrets -> nothing to send
+    assert module.compute_patch({"id": OID}, {"configuration": {"client_secret": "s"}}, update_secrets=False, **kwargs) == {}
+
+
 # ------------------------------------------------------------ create_or_update
 
 
@@ -241,8 +253,9 @@ def test_update_and_delete_api_errors(fake_api):
         module.create_or_update(existing, {"description": "new"}, "/projects")
     assert exc.value.kwargs["msg"] == "Failed to update project 'p': bad description"
 
-    # already gone -> nothing changed
+    # already gone -> nothing changed, and no deletion recorded in the diff
     assert module.delete_if_needed(existing, "/projects") is False
+    assert module._diff == {"before": {}, "after": {}}
     with pytest.raises(AnsibleFailJson) as exc:
         module.delete_if_needed(existing, "/projects")
     assert exc.value.kwargs["msg"] == "Failed to delete project 'p': in use"

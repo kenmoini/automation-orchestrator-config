@@ -519,7 +519,10 @@ class OrchestratorModule(AnsibleModule):
                     patch[key] = copy.deepcopy(wanted)
                 continue
             current = existing.get(key)
-            if key in full_fields and isinstance(wanted, dict) and isinstance(current, dict):
+            if key in full_fields and isinstance(wanted, dict):
+                # A missing/None/non-dict existing value is treated as empty so secret sub-keys are still dropped.
+                if not isinstance(current, dict):
+                    current = {}
                 changed = False
                 for sub_key, sub_value in wanted.items():
                     if sub_key in secret_fields:
@@ -591,6 +594,7 @@ class OrchestratorModule(AnsibleModule):
             self.request("DELETE", "{0}/{1}".format(path, existing["id"]), expect=(200, 202, 204))
         except OrchestratorAPIError as err:
             if err.status == 404:
+                self._diff = {"before": {}, "after": {}}
                 return False
             self.fail_api(err, "Failed to delete {0} '{1}'".format(label, _display_name(existing)))
         return True
