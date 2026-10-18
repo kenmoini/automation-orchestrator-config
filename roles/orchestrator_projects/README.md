@@ -131,9 +131,9 @@ orchestrator_projects:
   # orchestrator_username: admin
   # orchestrator_password: changeme
   pre_tasks:
-    - name: Include vars from configs directory
+    - name: Include vars from orchestrator_configs directory
       ansible.builtin.include_vars:
-        dir: ./yaml
+        dir: ./orchestrator_configs
         extensions: ["yml"]
   roles:
     - {role: kenmoini.automation_orchestrator_config.orchestrator_projects, when: orchestrator_projects is defined}

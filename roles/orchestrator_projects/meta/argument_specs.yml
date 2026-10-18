@@ -139,5 +139,5 @@ argument_specs:
         default: 10
         required: false
         description: Timeout in seconds for requests to the Automation Orchestrator server.
-        type: int
+        type: float
 ...

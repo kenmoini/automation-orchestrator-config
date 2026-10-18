@@ -56,10 +56,12 @@ Substitution points:
   (provided by `global_vars`; keys present, absent, exists, enabled, disabled, rotated, launched, approved, rejected).
 - Item fields map 1:1 to module params:
   - `name: "{{ item.name | mandatory }}"` (use the module's identifying key(s) instead if it is not `name`).
-  - strings/dicts/lists: `"{{ item.<f> | default(omit, true) }}"`.
-  - booleans: `"{{ item.<f> | default(omit) }}"`.
-  - When enforce-defaults is meaningful for a field, use
-    `default(('' if orchestrator_configuration_<res>_enforce_defaults else omit), true)` (use `{}`, `[]`, `false`, `0` as the typed default).
+  - Enforce-defaults rule: bool and int fields are never enforced and always use plain `| default(omit)` (no `true`, so an explicit
+    `false`/`0` reaches the module); only str/dict/list fields use the enforce form.
+  - strings/dicts/lists without enforcement: `"{{ item.<f> | default(omit, true) }}"`.
+  - strings/dicts/lists with enforcement:
+    `"{{ item.<f> | default(('' if orchestrator_configuration_<res>_enforce_defaults else omit), true) }}"` (use `{}` for dicts, `[]` for lists).
+  - booleans and integers: `"{{ item.<f> | default(omit) }}"`.
   - `register` is consumed by `collect_async_status` and is never passed to the module.
 - State line (exact): `state: "{{ __orchestrator_<res>_item.state | default(orchestrator_state | default('present')) }}"`.
 - Auth block (exact, on every module call):
@@ -106,7 +108,7 @@ async vars (`orchestrator_configuration_<res>_async_retries`, `orchestrator_conf
 (`orchestrator_configuration_<res>_secure_logging`, `orchestrator_configuration_secure_logging`), and the generic auth
 vars (`orchestrator_state`, `orchestrator_hostname`, `orchestrator_validate_certs`, `orchestrator_username`,
 `orchestrator_password`, `orchestrator_token`, `orchestrator_client_id`, `orchestrator_client_secret`,
-`orchestrator_request_timeout`). Copy these blocks verbatim from the projects role. ansible-lint `role-argument-spec` and `args` must pass.
+`orchestrator_request_timeout`, typed `float`). Copy these blocks verbatim from the projects role. ansible-lint `role-argument-spec` and `args` must pass.
 
 ## README.md
 
@@ -126,6 +128,9 @@ and `register`, YAML and JSON examples, Playbook Examples using
 
 ## Substitution list (projects -> new resource)
 
+Warning: replace the `<res>`/`<module>`/`<Res>`/`<Module>` placeholders with real values first, and run the `s/project/<module>/g`
+substitution BEFORE hand-adding item fields that contain the word "project" (for example a `project:` field in scoped roles).
+
 Apply to a copy of `roles/orchestrator_projects` (order matters: longest first):
 
 ```sh
@@ -142,6 +147,27 @@ Then hand-edit: the item field lines in `tasks/main.yml`, the commented per-item
 `argument_specs.yml`, the README data-structure table and examples, the description/tags in `meta/main.yml`,
 and `tests/configs/<res>.yml`. The sed does not touch the module-specific fields; check every `description`/`labels`
 line is replaced. Rename `tests/configs/projects.yml` to `tests/configs/<res>.yml`.
+
+## Identifying key
+
+The module task, loop labels and README table must use the resource's identifying key, not always `name`.
+Four label sites to change (all four reference `.name` in the projects role):
+
+1. module-task `loop_control.label` (`__orchestrator_<res>_item.name`);
+2. the `collect_async_status` include `loop_control.label` (`..._job_async_results_item.__orchestrator_<res>_item.name`);
+3. `cas_object_label`;
+4. the README per-item variable table (the required key row) and examples.
+
+Also change the mandatory module param in the module task. `collect_async_status/tasks/handle_error.yml` already captures the keys
+`name`, `username`, `project`, `workflow`, `role`, `user`, `group`, `service_account`, `key`, so error output needs no change.
+
+Concrete label expressions (replace `{{ ...item.name }}`):
+
+- `orchestrator_users`: `{{ item.username }}`.
+- `orchestrator_role_assignments`: `{{ item.role }} -> {{ item.user | default(item.group) }}`.
+- `orchestrator_service_account_credentials`: `{{ item.service_account }}/{{ item.identifier | default('new') }}`.
+
+Here `item` stands for `__orchestrator_<res>_item` (site 1) or `..._job_async_results_item.__orchestrator_<res>_item` (sites 2 and 3).
 
 ## Action-role variant
 
