@@ -162,3 +162,20 @@ def test_find_existing_with_kind_uses_scope_rule(fake_api):
     assert fake_api.calls[-1]["query"]["project_id"] == PID
     assert module.find_existing("/roles", "gone", "new", kind="role", project_id=PID)["id"] == "n"
     assert module.find_existing("/roles", "gone", "new", kind="role") is None
+
+
+@pytest.mark.parametrize("kind, item_path", [("workflow", "/api/v1/workflows/"), ("credential", "/api/v1/credentials/")])
+def test_resolve_obj_scoped_kind_by_uuid_uses_item_path(fake_api, kind, item_path):
+    fake_api.add("GET", item_path + UID, 200, {"id": UID, "name": "x", "project_id": PID})
+    module = make_module(fake_api)
+
+    assert module.resolve_obj(kind, UID, project_id=PID)["id"] == UID
+    assert module.resolve_obj(kind, UID)["id"] == UID
+    assert [c["path"] for c in fake_api.calls] == [item_path + UID, item_path + UID]
+
+
+def test_resolve_obj_scoped_kind_by_uuid_missing_returns_none(fake_api):
+    fake_api.add("GET", "/api/v1/workflows/" + UID, 404, {"detail": "gone"})
+    module = make_module(fake_api)
+
+    assert module.resolve_obj("workflow", UID, project_id=PID) is None

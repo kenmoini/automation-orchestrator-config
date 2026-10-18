@@ -43,10 +43,11 @@ def test_info_lists_and_filters_name_exactly(fake_api):
 
 
 def test_info_by_id(fake_api):
-    fake_api.add("GET", ITEM, 200, _with_version({"name": "deploy"}))
+    fake_api.add("GET", ITEM, 200, _with_version({"name": "deploy"}, warning="x"))
     result = run_module(module_under_test.main, {"id": WID}, fake_api)
     assert [r["id"] for r in result["resources"]] == [WID]
     assert "version" not in result["resources"][0]
+    assert "warning" not in result["resources"][0]
 
 
 def test_info_by_id_missing_returns_empty(fake_api):

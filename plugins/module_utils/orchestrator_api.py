@@ -68,6 +68,12 @@ LOOKUPS = {
     "workflow": ("/projects/{project_id}/workflows", "name", SCOPE_PATH),
 }
 
+# Single-object paths for path-scoped kinds: the list lives under the project, the item does not.
+ITEM_PATHS = {
+    "credential": "/credentials",
+    "workflow": "/workflows",
+}
+
 GROUP_DIRECTORY_PATH = "/groups/directory"
 
 AUTH_ARGUMENT_SPEC = dict(
@@ -500,7 +506,8 @@ class OrchestratorModule(AnsibleModule):
     def resolve_obj(self, kind, value, project_id=None):
         """Return the object for ``value`` (name or UUID), or ``None`` when it does not exist.
 
-        A UUID is fetched with ``GET <path>/<id>`` (404 -> ``None``). Groups found by name are
+        A UUID is fetched with ``GET <path>/<id>`` (404 -> ``None``), where path-scoped kinds use their
+        ``ITEM_PATHS`` entry (no project_id needed); the caller checks the object's ``project_id``. Groups found by name are
         re-fetched by id because the group directory only returns ``id`` and ``name``.
         """
         self._lookup_spec(kind)
@@ -511,7 +518,7 @@ class OrchestratorModule(AnsibleModule):
             if obj is None or kind != "group":
                 return obj
             value = obj["id"]
-        path = self._lookup_path(kind, value, project_id)[0]
+        path = ITEM_PATHS.get(kind) or self._lookup_path(kind, value, project_id)[0]
         try:
             return self.request("GET", "{0}/{1}".format(path, value))
         except OrchestratorAPIError as err:

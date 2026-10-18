@@ -68,7 +68,11 @@ options:
       - Mutually exclusive with O(workflow_definition).
     type: path
   is_import:
-    description: Mark the workflow as imported when it is created. Ignored for existing workflows.
+    description:
+      - Mark the workflow as imported when it is created. Ignored for existing workflows.
+      - On import the server adapts the definition, for example it clears LLM models that are not available and removes
+        missing webhook or EDA service accounts. The module then warns that the stored definition differs, and later runs
+        report a change until the local definition matches the stored one.
     type: bool
     default: false
   change_description:
@@ -96,6 +100,9 @@ options:
     choices: [present, absent, exists]
     default: present
 notes:
+  - After sending a definition the module compares it with the definition the server stored and warns when they differ,
+    because later runs would keep reporting a change. Use M(kenmoini.automation_orchestrator_config.workflow_info) with
+    O(kenmoini.automation_orchestrator_config.workflow_info#module:include_definition=true) to export the stored definition.
   - O(definition_file) is parsed as JSON first and as YAML when that fails. YAML needs PyYAML on the host that runs the module.
 seealso:
   - module: kenmoini.automation_orchestrator_config.workflow_info
@@ -190,12 +197,16 @@ workflow:
     published_version_number: 3
     is_enabled: true
 version:
-  description: Number of the current version of the workflow, or V(null) when it is unknown, deleted or does not exist.
+  description:
+    - Number of the current version of the workflow, or V(null) when it is unknown, deleted or does not exist.
+    - In check mode this is the version before the change, because the server assigns the number of a new version.
   returned: always
   type: int
   sample: 3
 published_version:
-  description: Number of the published version, or V(null) when the workflow is not published.
+  description:
+    - Number of the published version, or V(null) when the workflow is not published.
+    - In check mode a publish after a definition change shows the version before the change.
   returned: always
   type: int
   sample: 3
@@ -282,17 +293,17 @@ def _get_full(module, workflow_id, name):
         module.fail_api(err, "Failed to read workflow '{0}'".format(name))
 
 
-def _lookup(module, value, project_id):
-    """Return ``(workflow, full)`` for a name or ID; ``full`` is the workflow with its version when fetched by ID."""
-    if not is_uuid(value):
-        return module.resolve_obj("workflow", value, project_id=project_id), None
-    try:
-        full = module.request("GET", "{0}/{1}".format(WORKFLOWS, value))
-    except OrchestratorAPIError as err:
-        if err.status == 404:
-            return None, None
-        module.fail_api(err, "Failed to read workflow '{0}'".format(value))
-    return full, full
+def _warn_if_rewritten(module, obj, name, sent):
+    """Return ``obj`` with its version details; warn when the server stored a definition other than ``sent``."""
+    if not isinstance(obj, dict) or not isinstance(obj.get("version"), dict):
+        obj = _get_full(module, obj["id"], name)
+    stored = ((obj or {}).get("version") or {}).get("workflow_definition")
+    if stored is not None and _canonical(stored) != _canonical(sent):
+        module.warn(
+            "The server stored a modified definition for workflow '{0}'; later runs will keep reporting a change until the local definition "
+            "matches the stored one (export it with workflow_info include_definition=true).".format(name)
+        )
+    return obj
 
 
 def _create(module, name, params, project_id, definition):
@@ -313,7 +324,11 @@ def _create(module, name, params, project_id, definition):
         obj = module.request("POST", WORKFLOWS, data=body)
     except OrchestratorAPIError as err:
         module.fail_api(err, "Failed to create workflow '{0}'".format(name))
-    return obj if obj is not None else body
+    if not isinstance(obj, dict) or not obj.get("id"):
+        obj = module.resolve_obj("workflow", name, project_id=project_id)
+        if obj is None:
+            module.fail_json(msg="Workflow '{0}' was created but could not be read back".format(name))
+    return _warn_if_rewritten(module, obj, name, definition)
 
 
 def _update(module, existing, name, params, definition, full):
@@ -335,7 +350,7 @@ def _update(module, existing, name, params, definition, full):
         patch["workflow_definition"] = definition
         if params["change_description"] is not None:
             patch["change_description"] = params["change_description"]
-        patch["expected_version"] = existing.get("current_version")
+        patch["expected_version"] = full.get("current_version", existing.get("current_version"))
         before["workflow_definition"] = copy.deepcopy(current_definition)
         after["workflow_definition"] = copy.deepcopy(definition)
     module._diff = {"before": before, "after": after}
@@ -350,7 +365,9 @@ def _update(module, existing, name, params, definition, full):
         obj = module.request("PATCH", "{0}/{1}".format(WORKFLOWS, existing["id"]), data=patch)
     except OrchestratorAPIError as err:
         module.fail_api(err, "Failed to update workflow '{0}'".format(name))
-    if not isinstance(obj, dict) or obj.get("current_version") is None:
+    if definition_changed:
+        obj = _warn_if_rewritten(module, obj if isinstance(obj, dict) and obj.get("id") else {"id": existing["id"]}, name, definition)
+    elif not isinstance(obj, dict) or obj.get("current_version") is None:
         obj = _get_full(module, existing["id"], name)
     return True, obj, definition_changed
 
@@ -359,7 +376,7 @@ def _publish(module, obj, name, definition_changed, change_description):
     current = obj.get("current_version")
     if not definition_changed and obj.get("published_version_number") == current:
         return False, obj
-    if module.check_mode or not obj.get("id"):
+    if module.check_mode:
         preview = dict(obj)
         preview["published_version_number"] = current
         return True, preview
@@ -425,9 +442,10 @@ def main():
         definition = _load_definition_file(module, params["definition_file"])
 
     project_id = module.resolve_id("project", params["project"])
-    existing, full = _lookup(module, params["name"], project_id)
-    if existing is None and state == "present" and params["new_name"]:
-        existing, full = _lookup(module, params["new_name"], project_id)
+    new_name = params["new_name"] if state == "present" else None
+    existing = module.find_existing(None, params["name"], new_name, kind="workflow", project_id=project_id)
+    # Found by ID: GET /workflows/{id} already returned the current version, so reuse it for the comparison.
+    full = existing if isinstance((existing or {}).get("version"), dict) else None
     if existing is not None and existing.get("project_id") != project_id:
         module.fail_json(msg="project_id cannot be changed on an existing workflow")
 

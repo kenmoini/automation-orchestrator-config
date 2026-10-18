@@ -12,6 +12,7 @@ import json
 import pytest
 
 from ansible_collections.kenmoini.automation_orchestrator_config.plugins.modules import workflow as module_under_test
+from ansible.module_utils import basic
 from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import AnsibleFailJson, run_module
 
 PID = "11111111-1111-4111-8111-111111111111"
@@ -81,6 +82,8 @@ def test_create(fake_api):
     fake_api.add("GET", LIST, 200, _list())
     fake_api.add("POST", WFS, 201, _wf())
     definition = {"triggers": [{"id": "t1"}], "nodes": [], "edges": []}
+    stored = {"schema_version": "2.0.0", "name": "deploy", "triggers": [{"id": "t1"}], "nodes": [], "edges": []}
+    fake_api.add("GET", ITEM, 200, _with_version(stored))
     params = dict(BASE, description="d", labels={"a": "1"}, workflow_definition=definition)
     result = run_module(module_under_test.main, params, fake_api)
     assert result["changed"] is True
@@ -101,7 +104,7 @@ def test_create(fake_api):
 def test_create_resolves_project_name(fake_api):
     fake_api.add("GET", "/api/v1/projects", 200, _list({"id": PID, "name": "platform"}))
     fake_api.add("GET", LIST, 200, _list())
-    fake_api.add("POST", WFS, 201, _wf())
+    fake_api.add("POST", WFS, 201, _with_version(_definition()))
     run_module(module_under_test.main, {"name": "deploy", "project": "platform", "workflow_definition": _definition(), "is_import": True}, fake_api)
     body = _calls(fake_api, "POST")[0]["body"]
     assert body["project_id"] == PID
@@ -131,6 +134,8 @@ def test_definition_file_json_and_yaml_loaded(fake_api, tmp_path):
     yaml_file.write_text("triggers:\n  - id: y\nnodes: []\nedges: []\n")
     fake_api.add("GET", LIST, 200, _list())
     fake_api.add("POST", WFS, 201, _wf())
+    fake_api.add("GET", ITEM, 200, _with_version({"schema_version": "2.0.0", "name": "deploy", "triggers": [{"id": "j"}], "nodes": [], "edges": []}), times=1)
+    fake_api.add("GET", ITEM, 200, _with_version({"schema_version": "2.0.0", "name": "deploy", "triggers": [{"id": "y"}], "nodes": [], "edges": []}), times=1)
     run_module(module_under_test.main, dict(BASE, definition_file=str(json_file)), fake_api)
     run_module(module_under_test.main, dict(BASE, definition_file=str(yaml_file)), fake_api)
     posts = _calls(fake_api, "POST")
@@ -155,7 +160,7 @@ def test_definition_file_not_a_mapping_fails(fake_api, tmp_path):
 
 def test_definition_name_overridden_to_item_name(fake_api):
     fake_api.add("GET", LIST, 200, _list())
-    fake_api.add("POST", WFS, 201, _wf())
+    fake_api.add("POST", WFS, 201, _with_version(_definition()))
     definition = _definition(name="something-else", schema_version="2.0.0")
     run_module(module_under_test.main, dict(BASE, workflow_definition=definition), fake_api)
     assert _calls(fake_api, "POST")[0]["body"]["workflow_definition"]["name"] == "deploy"
@@ -251,7 +256,60 @@ def test_changed_definition_check_mode_no_patch(fake_api):
     assert _calls(fake_api, "PATCH") == []
 
 
+def test_warns_when_server_rewrites_definition(fake_api, mocker):
+    warn = mocker.patch.object(basic.AnsibleModule, "warn")
+    fake_api.add("GET", LIST, 200, _list(_wf()))
+    fake_api.add("GET", ITEM, 200, _with_version(_definition()))
+    sent = _definition(edges=[])
+    stored = _definition(edges=[], nodes=[{"id": "n1", "type": "start", "model": None}])
+    fake_api.add("PATCH", ITEM, 200, _with_version(stored, current_version=3))
+    result = run_module(module_under_test.main, dict(BASE, workflow_definition=sent), fake_api)
+    assert result["changed"] is True
+    messages = [c.args[0] for c in warn.call_args_list]
+    assert len(messages) == 1
+    assert messages[0].startswith("The server stored a modified definition for workflow 'deploy'")
+
+
+def test_create_warns_when_import_rewrites_definition(fake_api, mocker):
+    warn = mocker.patch.object(basic.AnsibleModule, "warn")
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", WFS, 201, _wf(current_version=1))
+    fake_api.add("GET", ITEM, 200, _with_version(_definition(nodes=[]), current_version=1))
+    run_module(module_under_test.main, dict(BASE, workflow_definition=_definition(), is_import=True), fake_api)
+    assert warn.call_args_list[0].args[0].startswith("The server stored a modified definition for workflow 'deploy'")
+
+
+def test_no_warning_when_stored_definition_matches(fake_api, mocker):
+    warn = mocker.patch.object(basic.AnsibleModule, "warn")
+    fake_api.add("GET", LIST, 200, _list(_wf()))
+    fake_api.add("GET", ITEM, 200, _with_version(_definition()))
+    fake_api.add("PATCH", ITEM, 200, _with_version(_definition(edges=[]), current_version=3))
+    run_module(module_under_test.main, dict(BASE, workflow_definition=_definition(edges=[])), fake_api)
+    assert warn.call_args_list == []
+
+
 # ------------------------------------------------------------------ publish / unpublish
+
+
+def test_create_with_publish_publishes_version_1(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", WFS, 201, _with_version(_definition(), current_version=1))
+    fake_api.add("POST", ITEM + "/versions/1/publish", 200, _with_version(_definition(), current_version=1, published_version_number=1))
+    result = run_module(module_under_test.main, dict(BASE, workflow_definition=_definition(), publish=True, change_description="first"), fake_api)
+    assert result["changed"] is True
+    assert result["version"] == 1
+    assert result["published_version"] == 1
+    posts = _calls(fake_api, "POST")
+    assert [p["path"] for p in posts] == [WFS, ITEM + "/versions/1/publish"]
+    assert posts[1]["body"] == {"change_description": "first"}
+
+
+def test_expected_version_comes_from_fetched_definition(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_wf(current_version=2)))
+    fake_api.add("GET", ITEM, 200, _with_version(_definition(), current_version=4))
+    fake_api.add("PATCH", ITEM, 200, _with_version(_definition(edges=[]), current_version=5))
+    run_module(module_under_test.main, dict(BASE, workflow_definition=_definition(edges=[])), fake_api)
+    assert _calls(fake_api, "PATCH")[0]["body"]["expected_version"] == 4
 
 
 def test_publish_after_change_targets_new_version(fake_api):
@@ -385,7 +443,7 @@ def test_exists_does_not_modify(fake_api):
 
 def test_exists_creates_when_missing(fake_api):
     fake_api.add("GET", LIST, 200, _list())
-    fake_api.add("POST", WFS, 201, _wf())
+    fake_api.add("POST", WFS, 201, _with_version(_definition()))
     result = run_module(module_under_test.main, dict(BASE, state="exists", workflow_definition=_definition()), fake_api)
     assert result["changed"] is True
     assert len(_calls(fake_api, "POST")) == 1

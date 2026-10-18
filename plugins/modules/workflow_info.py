@@ -130,7 +130,7 @@ def _by_id(module, workflow_id):
         if err.status == 404:
             return None, None
         module.fail_api(err, "Failed to read workflow '{0}'".format(workflow_id))
-    workflow = dict((k, v) for k, v in full.items() if k != "version")
+    workflow = dict((k, v) for k, v in full.items() if k not in ("version", "warning"))
     return workflow, full
 
 
