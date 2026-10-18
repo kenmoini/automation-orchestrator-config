@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  author: Ken Moini
+  description: Global variables consumed by every role in the kenmoini.automation_orchestrator_config collection
+  company: none
+
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.16.0
+
+  galaxy_tags:
+    - orchestrator
+    - configuration
+
+dependencies: []
+...

@@ -1,0 +1,12 @@
+---
+argument_specs:
+  main:
+    short_description: Global variables consumed by every role in the collection
+    description:
+      - Defines the C(operation_translate) dictionary, which maps object states to a human-readable verb and action.
+    options:
+      operation_translate:
+        type: dict
+        required: false
+        description: Translation from object states to human interpretation. Each entry has C(verb) and C(action).
+...
