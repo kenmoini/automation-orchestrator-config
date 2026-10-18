@@ -121,10 +121,9 @@ def main():
                 module.fail_json(msg="approval '{0}' not found".format(params["id"]))
             module.fail_api(err, "Failed to read approval '{0}'".format(params["id"]))
     else:
-        try:
-            found = module.get_all("/approvals", {"execution_id": params["execution"]})
-        except OrchestratorAPIError as err:
-            module.fail_api(err, "Failed to list approvals for execution {0}".format(params["execution"]))
+        found = module.get_all(
+            "/approvals", {"execution_id": params["execution"]}, context="Failed to list approvals for execution {0}".format(params["execution"])
+        )
         matches = [a for a in found if a.get("name") == params["name"]]
         if not matches:
             module.fail_json(msg="approval '{0}' not found for execution {1}".format(params["name"], params["execution"]))

@@ -102,10 +102,7 @@ def main():
         path = "/approvals"
         if params["project"]:
             path = "/projects/{0}/approvals".format(module.resolve_id("project", params["project"]))
-        try:
-            resources = module.get_all(path, query)
-        except OrchestratorAPIError as err:
-            module.fail_api(err, "Failed to list approvals")
+        resources = module.get_all(path, query, context="Failed to list approvals")
     module.exit_info(resources)
 
 

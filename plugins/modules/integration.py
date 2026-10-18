@@ -457,10 +457,7 @@ def _reconcile_projects(module, integration, name, values):
     """Make the project assignments of ``integration`` match ``values``; return (changed, project names)."""
     path = "{0}/{1}/projects".format(INTEGRATIONS, integration["id"])
     context = "Failed to update projects for integration '{0}'".format(name)
-    try:
-        current = module.get_all(path)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, context)
+    current = module.get_all(path, context=context)
     current_names = dict((p.get("project_id"), p.get("project_name")) for p in current)
     target = {}
     order = []
@@ -499,10 +496,7 @@ def _reconcile_rows(module, integration, name, kind, entries):
         label, flags, key_of, fields = "Tool", TOOL_FLAGS, (lambda entry: entry["name"]), ("name", "namespaced_name")
     path = "{0}/{1}/{2}".format(INTEGRATIONS, integration["id"], kind)
     context = "Failed to update {0} for integration '{1}'".format(kind, name)
-    try:
-        rows = module.get_all(path)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, context)
+    rows = module.get_all(path, context=context)
     patches = []
     for entry in entries:
         row = _find(rows, key_of(entry), fields)

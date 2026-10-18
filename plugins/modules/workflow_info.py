@@ -148,10 +148,7 @@ def _enrich(module, workflow, full, params):
             full = _request(module, path, "Failed to read workflow '{0}'".format(name))
         workflow["workflow_definition"] = ((full or {}).get("version") or {}).get("workflow_definition")
     if params["include_versions"]:
-        try:
-            workflow["versions"] = module.get_all(path + "/versions")
-        except OrchestratorAPIError as err:
-            module.fail_api(err, "Failed to list versions of workflow '{0}'".format(name))
+        workflow["versions"] = module.get_all(path + "/versions", context="Failed to list versions of workflow '{0}'".format(name))
     return workflow
 
 
@@ -177,10 +174,7 @@ def main():
         if project_id is not None:
             resources = [r for r in resources if r.get("project_id") == project_id]
     else:
-        try:
-            resources = module.get_all("/projects/{0}/workflows".format(project_id))
-        except OrchestratorAPIError as err:
-            module.fail_api(err, "Failed to list workflows")
+        resources = module.get_all("/projects/{0}/workflows".format(project_id), context="Failed to list workflows")
     if params["name"] is not None:
         resources = [r for r in resources if r.get("name") == params["name"]]
 

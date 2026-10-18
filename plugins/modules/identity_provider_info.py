@@ -65,16 +65,13 @@ resources:
         client_id: automation-orchestrator
 """
 
-from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError, OrchestratorModule
+from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorModule
 
 
 def main():
     argument_spec = dict(name=dict(type="str"))
     module = OrchestratorModule(argument_spec=argument_spec, supports_check_mode=True)
-    try:
-        resources = module.get_all("/identity_providers")
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to list identity providers")
+    resources = module.get_all("/identity_providers", context="Failed to list identity providers")
     if module.params["name"] is not None:
         resources = [r for r in resources if r.get("name") == module.params["name"]]
     module.exit_info(resources)

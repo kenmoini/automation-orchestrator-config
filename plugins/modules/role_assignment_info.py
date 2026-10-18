@@ -87,7 +87,7 @@ resources:
       is_builtin: false
 """
 
-from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError, OrchestratorModule, is_uuid
+from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorModule, is_uuid
 
 
 def main():
@@ -120,10 +120,7 @@ def main():
             "principal_type": params["principal_type"],
         }
     )
-    try:
-        resources = module.get_all("/role_assignments", query)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to look up role assignments")
+    resources = module.get_all("/role_assignments", query, context="Failed to look up role assignments")
     module.exit_info(resources)
 
 

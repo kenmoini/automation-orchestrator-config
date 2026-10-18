@@ -135,3 +135,11 @@ def test_delete_builtin_project_fails_with_name(fake_api):
         run_module(project_module.main, {"name": "Default", "state": "absent"}, fake_api)
     assert "Default" in exc.value.args[0]["msg"]
     assert [c["method"] for c in fake_api.calls] == ["GET"]
+
+
+def test_lookup_server_error_fails_cleanly(fake_api):
+    fake_api.add("GET", LIST, 500, {"status": 500, "title": "Internal Server Error", "detail": "db down"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(project_module.main, {"name": "demo"}, fake_api)
+    assert exc.value.kwargs["status"] == 500
+    assert exc.value.kwargs["msg"] == "Failed to look up project 'demo': db down"

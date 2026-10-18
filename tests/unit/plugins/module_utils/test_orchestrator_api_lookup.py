@@ -179,3 +179,58 @@ def test_resolve_obj_scoped_kind_by_uuid_missing_returns_none(fake_api):
     module = make_module(fake_api)
 
     assert module.resolve_obj("workflow", UID, project_id=PID) is None
+
+
+# ------------------------------------------------------------ API errors fail cleanly
+
+FORBIDDEN = {"status": 403, "title": "Forbidden", "detail": "nope"}
+
+
+def test_get_all_api_error_fails_module(fake_api):
+    fake_api.add("GET", "/api/v1/integrations", 403, FORBIDDEN)
+    module = make_module(fake_api)
+
+    with pytest.raises(AnsibleFailJson) as exc:
+        module.get_all("/integrations")
+    assert exc.value.kwargs["status"] == 403
+    assert exc.value.kwargs["msg"] == "Failed to list /api/v1/integrations: nope"
+
+
+def test_get_all_api_error_uses_context(fake_api):
+    fake_api.add("GET", "/api/v1/integrations", 403, FORBIDDEN)
+    module = make_module(fake_api)
+
+    with pytest.raises(AnsibleFailJson) as exc:
+        module.get_all("/integrations", context="Failed to list integrations")
+    assert exc.value.kwargs["msg"] == "Failed to list integrations: nope"
+
+
+def test_get_all_raw_raises(fake_api):
+    from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError
+
+    fake_api.add("GET", "/api/v1/integrations", 403, FORBIDDEN)
+    module = make_module(fake_api)
+
+    with pytest.raises(OrchestratorAPIError) as exc:
+        module._get_all_raw("/integrations")
+    assert exc.value.status == 403
+
+
+def test_get_one_by_name_api_error_fails_module(fake_api):
+    fake_api.add("GET", "/api/v1/projects", 403, FORBIDDEN)
+    module = make_module(fake_api)
+
+    with pytest.raises(AnsibleFailJson) as exc:
+        module.get_one_by_name("/projects", "Default")
+    assert exc.value.kwargs["status"] == 403
+    assert exc.value.kwargs["msg"] == "Failed to look up project 'Default': nope"
+
+
+def test_find_existing_api_error_fails_module(fake_api):
+    fake_api.add("GET", "/api/v1/groups", 403, FORBIDDEN)
+    module = make_module(fake_api)
+
+    with pytest.raises(AnsibleFailJson) as exc:
+        module.find_existing("/groups", "ops", "ops2")
+    assert exc.value.kwargs["status"] == 403
+    assert exc.value.kwargs["msg"] == "Failed to look up group 'ops': nope"

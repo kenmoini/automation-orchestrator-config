@@ -130,7 +130,7 @@ def main():
     expect = tuple(params["expect"]) if params["expect"] else None
     try:
         if params["return_all_pages"] and method == "GET":
-            body = {"resources": module.get_all(params["endpoint"], query=params["query_params"])}
+            body = {"resources": module.get_all(params["endpoint"], query=params["query_params"], context="API request failed")}
         else:
             body = module.request(method, params["endpoint"], query=params["query_params"], data=params["data"], expect=expect)
     except OrchestratorAPIError as err:

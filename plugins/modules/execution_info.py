@@ -128,10 +128,9 @@ def main():
 
     if params["include_activities"]:
         for execution in resources:
-            try:
-                execution["activities"] = module.get_all("/executions/{0}/activities".format(execution["id"]))
-            except OrchestratorAPIError as err:
-                module.fail_api(err, "Failed to read activities of execution {0}".format(execution["id"]))
+            execution["activities"] = module.get_all(
+                "/executions/{0}/activities".format(execution["id"]), context="Failed to read activities of execution {0}".format(execution["id"])
+            )
     module.exit_info(resources)
 
 

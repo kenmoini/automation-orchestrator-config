@@ -377,8 +377,19 @@ class OrchestratorModule(AnsibleModule):
 
     # ------------------------------------------------------------ pagination
 
-    def get_all(self, path, query=None):
-        """Return every resource of a cursor-paginated list endpoint (``limit=100``, following ``next``)."""
+    def get_all(self, path, query=None, context=None):
+        """Return every resource of a cursor-paginated list endpoint (``limit=100``, following ``next``).
+
+        An API error fails the module with ``context`` (default ``"Failed to list <path>"``), the status, code and body.
+        Use ``_get_all_raw`` to handle OrchestratorAPIError yourself.
+        """
+        try:
+            return self._get_all_raw(path, query=query)
+        except OrchestratorAPIError as err:
+            self.fail_api(err, context or "Failed to list {0}{1}".format(API_PREFIX, path))
+
+    def _get_all_raw(self, path, query=None):
+        """Same as ``get_all`` but raises OrchestratorAPIError instead of failing the module."""
         base_query = dict(query or {})
         base_query["limit"] = PAGE_LIMIT
         base_query.pop("cursor", None)
@@ -404,8 +415,16 @@ class OrchestratorModule(AnsibleModule):
         """Return the single object of ``path`` whose ``name_field`` equals ``name`` exactly, or ``None``.
 
         Uses the server-side name filter when ``path`` has one (``SERVER_NAME_FILTERS``) and fails
-        the module when more than one object matches.
+        the module when more than one object matches. An API error fails the module with
+        ``"Failed to look up <label> '<name>'"``; use ``_get_one_by_name_raw`` to handle OrchestratorAPIError yourself.
         """
+        try:
+            return self._get_one_by_name_raw(path, name, name_field=name_field, query=query, label=label)
+        except OrchestratorAPIError as err:
+            self.fail_api(err, "Failed to look up {0} '{1}'".format(_item_label(path, label), name))
+
+    def _get_one_by_name_raw(self, path, name, name_field="name", query=None, label=None):
+        """Same as ``get_one_by_name`` but raises OrchestratorAPIError instead of failing the module."""
         return self._find_by_name(path, name, name_field=name_field, query=query, label=label)
 
     def find_existing(self, path, name, new_name=None, kind=None, project_id=None, **lookup_kwargs):
@@ -430,7 +449,7 @@ class OrchestratorModule(AnsibleModule):
         filter_param = SERVER_NAME_FILTERS.get(path)
         if filter_param:
             query[filter_param] = name
-        matches = [obj for obj in self.get_all(path, query=query) if isinstance(obj, dict) and obj.get(name_field) == name]
+        matches = [obj for obj in self._get_all_raw(path, query=query) if isinstance(obj, dict) and obj.get(name_field) == name]
         if predicate is not None:
             matches = [obj for obj in matches if predicate(obj)]
         if not matches:

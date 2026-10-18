@@ -110,7 +110,9 @@ def main():
                 row = None
             resources = [row] if row else []
         else:
-            resources = module.get_all("/settings", module.build_desired({"category": params["category"], "group": params["group"]}))
+            resources = module.get_all(
+                "/settings", module.build_desired({"category": params["category"], "group": params["group"]}), context="Failed to look up settings"
+            )
     except OrchestratorAPIError as err:
         module.fail_api(err, "Failed to look up settings")
     module.exit_info(resources)

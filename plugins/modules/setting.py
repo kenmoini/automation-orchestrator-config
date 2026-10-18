@@ -174,7 +174,7 @@ def main():
                     raise
                 rows = {}
         else:
-            rows = dict((row["key"], row) for row in module.get_all("/settings"))
+            rows = dict((row["key"], row) for row in module.get_all("/settings", context="Failed to look up settings"))
     except OrchestratorAPIError as err:
         module.fail_api(err, "Failed to look up settings")
     for key in keys:

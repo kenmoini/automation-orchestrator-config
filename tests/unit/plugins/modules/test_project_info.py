@@ -7,8 +7,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import pytest
+
 from ansible_collections.kenmoini.automation_orchestrator_config.plugins.modules import project_info as info_module
-from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import run_module
+from ansible_collections.kenmoini.automation_orchestrator_config.tests.unit.plugins.utils import AnsibleFailJson, run_module
 
 LIST = "/api/v1/projects"
 
@@ -44,3 +46,11 @@ def test_info_strips_secrets(fake_api):
     result = run_module(info_module.main, {}, fake_api)
     assert result["resources"][0]["inputs"] == "$encrypted$"
     assert result["resources"][0]["password"] == "$encrypted$"
+
+
+def test_info_forbidden_fails_cleanly(fake_api):
+    fake_api.add("GET", LIST, 403, {"status": 403, "title": "Forbidden", "detail": "nope"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(info_module.main, {}, fake_api)
+    assert exc.value.kwargs["status"] == 403
+    assert exc.value.kwargs["msg"] == "Failed to list /api/v1/projects: nope"

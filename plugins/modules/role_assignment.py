@@ -170,10 +170,7 @@ def main():
     principal_id = module.resolve_id(principal_kind, principal_label)
 
     query = module.build_desired({"role_name": role_name, "project_id": project_id, principal_key: principal_id})
-    try:
-        found = module.get_all("/role_assignments", query)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to look up role assignments")
+    found = module.get_all("/role_assignments", query, context="Failed to look up role assignments")
     matches = []
     for item in found:
         if item.get("principal_type") != principal_type or item.get("role_name") != role_name:

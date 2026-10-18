@@ -107,15 +107,14 @@ resources:
           is_default: true
 """
 
-from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError, OrchestratorModule
+from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorModule
 
 
 def _attach(module, integration, kind):
     """Set ``integration[kind]`` to the models or tools of ``integration``."""
-    try:
-        integration[kind] = module.get_all("/integrations/{0}/{1}".format(integration["id"], kind))
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to list {0} for integration '{1}'".format(kind, integration.get("name")))
+    integration[kind] = module.get_all(
+        "/integrations/{0}/{1}".format(integration["id"], kind), context="Failed to list {0} for integration '{1}'".format(kind, integration.get("name"))
+    )
 
 
 def main():
@@ -135,10 +134,7 @@ def main():
     query = module.build_desired(
         {"integration_type": params["integration_type"], "enabled": params["enabled"], "scope": params["scope"], "project_id": project_id}
     )
-    try:
-        resources = module.get_all("/integrations", query)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to list integrations")
+    resources = module.get_all("/integrations", query, context="Failed to list integrations")
     if params["name"] is not None:
         resources = [r for r in resources if r.get("name") == params["name"]]
     for integration in resources:

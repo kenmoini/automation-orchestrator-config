@@ -110,10 +110,7 @@ def main():
 
     project_id = module.resolve_id("project", params["project"]) if params["project"] else None
     query = module.build_desired({"name": params["name"], "status": params["status"]})
-    try:
-        resources = module.get_all("/service_accounts", query)
-    except OrchestratorAPIError as err:
-        module.fail_api(err, "Failed to list service accounts")
+    resources = module.get_all("/service_accounts", query, context="Failed to list service accounts")
     if params["name"] is not None:
         resources = [r for r in resources if r.get("name") == params["name"]]
     if project_id is not None:
