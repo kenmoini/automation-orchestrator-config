@@ -1,0 +1,111 @@
+---
+- name: handle_error | Handle Errors Block
+  block:
+    - name: handle_error | Show error and stop execution
+      when: not orchestrator_configuration_collect_logs | default(false) | bool
+      ansible.builtin.fail:
+        msg: >-
+          error: {{ __cas_job_async_result['msg']
+          | default(__cas_job_async_result['detail']
+          | default(__cas_job_async_result['error']
+          | default('Unknown Error'))) }}
+
+    - name: handle_error | Set item details fact
+      ansible.builtin.set_fact:
+        __cas_job_async_item: {}
+
+    - name: handle_error | Set loop variable name
+      ansible.builtin.set_fact:
+        __cas_job_async_item_loop_var: "{{ cas_job_async_results_item.ansible_loop_var }}"
+
+    - name: handle_error | Check item for name
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["name"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["name"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'name': cas_job_async_results_item[__cas_job_async_item_loop_var]['name']}) }}"
+
+    - name: handle_error | Check item for username
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["username"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["username"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'username': cas_job_async_results_item[__cas_job_async_item_loop_var]['username']}) }}"
+
+    - name: handle_error | Check item for project
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["project"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["project"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'project': cas_job_async_results_item[__cas_job_async_item_loop_var]['project']}) }}"
+
+    - name: handle_error | Check item for workflow
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["workflow"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["workflow"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'workflow': cas_job_async_results_item[__cas_job_async_item_loop_var]['workflow']}) }}"
+
+    - name: handle_error | Check item for role
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["role"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["role"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'role': cas_job_async_results_item[__cas_job_async_item_loop_var]['role']}) }}"
+
+    - name: handle_error | Check item for user
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["user"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["user"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'user': cas_job_async_results_item[__cas_job_async_item_loop_var]['user']}) }}"
+
+    - name: handle_error | Check item for group
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["group"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["group"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'group': cas_job_async_results_item[__cas_job_async_item_loop_var]['group']}) }}"
+
+    - name: handle_error | Check item for service_account
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["service_account"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["service_account"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: >-
+          {{ __cas_job_async_item
+          | combine({ 'service_account': cas_job_async_results_item[__cas_job_async_item_loop_var]['service_account'] }) }}
+
+    - name: handle_error | Check item for key
+      when:
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["key"] is defined
+        - cas_job_async_results_item[__cas_job_async_item_loop_var]["key"] is not none
+      ansible.builtin.set_fact:
+        __cas_job_async_item: "{{ __cas_job_async_item | combine({ 'key': cas_job_async_results_item[__cas_job_async_item_loop_var]['key']}) }}"
+
+    - name: handle_error | Build consolidated list of failed objects and the error
+      ansible.builtin.set_fact:
+        orchestrator_configuration_role_errors: "{{ orchestrator_configuration_role_errors | default({})
+                                              | ansible.builtin.combine(
+                                                  { cas_error_list_var_name: orchestrator_configuration_role_errors[cas_error_list_var_name]
+                                                      | default([]) + [__new_error]
+                                                  }
+                                                )
+                                        }}"
+      vars:
+        __new_error:
+          ERROR_MESSAGE: >-
+            {{ __cas_job_async_result['msg']
+            | default(__cas_job_async_result['detail']
+            | default(__cas_job_async_result['error']
+            | default('UNKNOWN ERROR'))) }}
+          name: "{{ __cas_job_async_item['name'] | default(omit) }}"
+          username: "{{ __cas_job_async_item['username'] | default(omit) }}"
+          project: "{{ __cas_job_async_item['project'] | default(omit) }}"
+          workflow: "{{ __cas_job_async_item['workflow'] | default(omit) }}"
+          role: "{{ __cas_job_async_item['role'] | default(omit) }}"
+          user: "{{ __cas_job_async_item['user'] | default(omit) }}"
+          group: "{{ __cas_job_async_item['group'] | default(omit) }}"
+          service_account: "{{ __cas_job_async_item['service_account'] | default(omit) }}"
+          key: "{{ __cas_job_async_item['key'] | default(omit) }}"
+...

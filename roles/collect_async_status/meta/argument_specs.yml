@@ -1,0 +1,36 @@
+---
+argument_specs:
+  main:
+    short_description: Check the status of asynchronous tasks and optionally collect errors
+    description:
+      - Internal role that waits for an asynchronous task to finish and either fails or collects the error.
+    options:
+      cas_job_async_results_item:
+        type: dict
+        required: true
+        description: The asynchronous item to check the status of, from the registered C(async) task.
+      cas_error_list_var_name:
+        type: str
+        required: true
+        description: The name of the dictionary key to use when collecting errors.
+      cas_register_subvar:
+        type: str
+        required: true
+        description: The name of the dictionary key to use when registering values.
+      cas_object_label:
+        type: str
+        required: true
+        description: The task name used for the C(async_status) check.
+      cas_async_retries:
+        type: int
+        required: false
+        description: Number of retries to attempt. Defaults to C(orchestrator_configuration_async_retries) or 50.
+      cas_async_delay:
+        type: int
+        required: false
+        description: Delay between retries. Defaults to C(orchestrator_configuration_async_delay) or 1.
+      cas_secure_logging:
+        type: bool
+        required: false
+        description: Whether to hide the role tasks in the log. Defaults to C(orchestrator_configuration_secure_logging) or false.
+...

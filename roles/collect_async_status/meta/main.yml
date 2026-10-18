@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: collect_async_status
+  author: Ken Moini
+  description: An Ansible Role that checks the status of asynchronous tasks and optionally collects errors.
+  company: none
+
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.16.0
+
+  galaxy_tags:
+    - orchestrator
+    - configuration
+    - async
+
+dependencies:
+  - role: global_vars
+...
