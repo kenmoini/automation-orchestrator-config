@@ -52,12 +52,15 @@ options:
       - Only the keys you set are compared. When any of them differs, the whole configuration is sent, completed with the existing values.
       - Each entry of V(group_mapping_entries) may give V(mapped_group), the name or ID of an Orchestrator group, instead of V(mapped_group_id).
         It is resolved to V(mapped_group_id) before the comparison.
+      - When both are given, V(mapped_group) takes precedence over V(mapped_group_id).
+      - Write list entries exactly as the API returns them, because entries are compared as a whole (in any order).
       - V(client_secret) is sensitive. It is sent only when set and O(update_secrets=true), is never returned and is hidden from the diff.
         Because it is a key of a dict, Ansible cannot hide it from the task arguments, so pass it from a vaulted variable.
     type: dict
   update_secrets:
     description:
-      - When V(false), V(client_secret) in O(configuration) is ignored and never sent.
+      - When V(false), V(client_secret) in O(configuration) is never written to the identity provider.
+      - With O(update_secrets=false) a supplied C(client_secret) is still sent to the test endpoint when O(test=true); it is never written to the provider.
       - When V(true), a supplied V(client_secret) is always sent and reported as a change, because the server never returns it.
     type: bool
     default: true
@@ -66,6 +69,7 @@ options:
       - Test the OIDC configuration with the Orchestrator before the identity provider is created or updated, and also when nothing else changes.
       - The result is returned in RV(test_result) and is never reported as a change.
       - The task fails and the identity provider is not created or updated when the test is not successful.
+      - A supplied C(client_secret) is sent to the test endpoint even with O(update_secrets=false); it is never written to the provider.
       - Skipped in check mode.
     type: bool
     default: false
@@ -196,9 +200,19 @@ test_result:
 
 import copy
 
-from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError, OrchestratorModule
+from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import (
+    OrchestratorAPIError,
+    OrchestratorModule,
+    strip_secrets,
+)
 
 IDENTITY_PROVIDERS = "/identity_providers"
+
+
+def _group_id(module, group):
+    if group == "":
+        module.fail_json(msg="group '' not found")
+    return module.resolve_id("group", group)
 
 
 def _resolve_configuration(module, configuration):
@@ -208,10 +222,10 @@ def _resolve_configuration(module, configuration):
     entries = resolved.get("group_mapping_entries")
     if isinstance(entries, list):
         for entry in entries:
-            if isinstance(entry, dict) and entry.get("mapped_group") is not None:
-                entry["mapped_group_id"] = module.resolve_id("group", entry["mapped_group"])
-            if isinstance(entry, dict):
-                entry.pop("mapped_group", None)
+            if isinstance(entry, dict) and "mapped_group" in entry:
+                group = entry.pop("mapped_group")
+                if group is not None:
+                    entry["mapped_group_id"] = _group_id(module, group)
     return resolved
 
 
@@ -226,7 +240,7 @@ def _run_test(module, name, desired, existing):
     except OrchestratorAPIError as err:
         module.fail_api(err, "Failed to test identity provider '{0}'".format(name))
     if not result.get("success"):
-        module.fail_json(msg="Identity provider test failed: {0}".format(result.get("message") or "unknown error"), test_result=result)
+        module.fail_json(msg="Identity provider test failed: {0}".format(result.get("message") or "unknown error"), test_result=strip_secrets(result))
     return result
 
 
@@ -271,6 +285,7 @@ def main():
             "configuration": configuration,
         }
     )
+    create_body = dict((k, v) for k, v in desired.items() if k != "enabled") if existing is None else desired
 
     extra = {}
     if params["test"] and not module.check_mode:
@@ -278,13 +293,23 @@ def main():
 
     changed, obj = module.create_or_update(
         existing,
-        desired,
+        create_body,
         IDENTITY_PROVIDERS,
         full_fields=("configuration",),
         secret_fields=("client_secret",),
         update_secrets=params["update_secrets"],
         item_label="identity provider",
     )
+    if existing is None and params["enabled"] is not None and obj is not None and obj.get("enabled") != params["enabled"]:
+        if module.check_mode:
+            obj = dict(obj, enabled=params["enabled"])
+        else:
+            try:
+                obj = module.request("PATCH", "{0}/{1}".format(IDENTITY_PROVIDERS, obj["id"]), data={"enabled": params["enabled"]}) or dict(
+                    obj, enabled=params["enabled"]
+                )
+            except OrchestratorAPIError as err:
+                module.fail_api(err, "Failed to update identity provider '{0}'".format(name))
     module.exit_result(changed, obj, **extra)
 
 

@@ -70,10 +70,21 @@ def test_compute_patch_list_order_insensitive_for_scalars(fake_api):
     assert module.compute_patch(existing, {"actions": ["write", "read"]}) == {}
     assert module.compute_patch(existing, {"actions": ["write"]}) == {"actions": ["write"]}
     assert module.compute_patch(existing, {"nested": {"y": {"z": 1}, "x": ["a", "b"]}}) == {}
-    # lists of dicts are order-sensitive
-    assert module.compute_patch(existing, {"rules": [{"b": 2}, {"a": 1}]}) == {"rules": [{"b": 2}, {"a": 1}]}
     assert module.compute_patch(existing, {"rules": [{"a": 1}, {"b": 2}]}) == {}
     # inputs are never mutated
+    assert existing == existing_copy
+
+
+def test_compute_patch_list_of_dicts_order_insensitive(fake_api):
+    module = make_module(fake_api)
+    existing = {"rules": [{"a": 1, "k": ["y", "x"]}, {"b": 2}]}
+    existing_copy = copy.deepcopy(existing)
+    reordered = [{"b": 2}, {"k": ["x", "y"], "a": 1}]
+
+    assert module.compute_patch(existing, {"rules": reordered}) == {}
+    # a real difference is still detected, and the payload keeps the caller's order
+    changed = [{"b": 3}, {"a": 1, "k": ["y", "x"]}]
+    assert module.compute_patch(existing, {"rules": changed}) == {"rules": changed}
     assert existing == existing_copy
 
 

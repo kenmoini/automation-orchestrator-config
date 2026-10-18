@@ -61,12 +61,12 @@ def test_create(fake_api):
     fake_api.add("GET", LIST, 200, _list())
     fake_api.add("POST", LIST, 201, _idp())
     result = run_module(module_under_test.main, dict(BASE, description="d", enabled=True, configuration=dict(CONF)), fake_api)
+    assert _calls(fake_api, "PATCH") == []
     assert result["changed"] is True
     assert result["id"] == "p1"
     assert _calls(fake_api, "POST")[0]["body"] == {
         "name": "sso",
         "description": "d",
-        "enabled": True,
         "configuration": dict(OIDC),
     }
 
@@ -230,3 +230,39 @@ def test_test_api_error_is_wrapped(fake_api):
     with pytest.raises(AnsibleFailJson) as exc:
         run_module(module_under_test.main, dict(BASE, configuration=dict(CONF), test=True), fake_api)
     assert exc.value.kwargs["msg"].startswith("Failed to test identity provider 'sso'")
+
+
+def test_create_disabled_patches_enabled_after_create(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    fake_api.add("POST", LIST, 201, _idp())
+    fake_api.add("PATCH", ITEM, 200, _idp(enabled=False))
+    result = run_module(module_under_test.main, dict(BASE, enabled=False, configuration=dict(CONF)), fake_api)
+    assert result["changed"] is True
+    assert "enabled" not in _calls(fake_api, "POST")[0]["body"]
+    assert _calls(fake_api, "PATCH")[0]["body"] == {"enabled": False}
+    assert result["identity_provider"]["enabled"] is False
+
+
+def test_group_mapping_entries_reordered_no_patch(fake_api):
+    entries = [{"idp_group_value": "a", "mapped_group_id": GID}, {"idp_group_value": "b", "mapped_group_id": GID}]
+    fake_api.add("GET", LIST, 200, _list(_idp(configuration=dict(OIDC, group_mapping_entries=entries))))
+    conf = dict(CONF, group_mapping_entries=list(reversed(entries)))
+    result = run_module(module_under_test.main, dict(BASE, configuration=conf), fake_api)
+    assert result["changed"] is False
+    assert _writes(fake_api) == []
+
+
+def test_empty_mapped_group_fails(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    conf = dict(CONF, group_mapping_entries=[{"idp_group_value": "a", "mapped_group": ""}])
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(module_under_test.main, dict(BASE, configuration=conf), fake_api)
+    assert exc.value.kwargs["msg"] == "group '' not found"
+
+
+def test_diff_masks_client_secret(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_idp()))
+    fake_api.add("PATCH", ITEM, 200, _idp())
+    result = run_module(module_under_test.main, dict(BASE, configuration={"client_secret": "s3"}, _ansible_diff=True), fake_api)
+    assert "s3" not in str(result["diff"])
+    assert result["diff"]["after"]["configuration"]["client_secret"] == "$encrypted$"

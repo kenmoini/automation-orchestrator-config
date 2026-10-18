@@ -180,13 +180,11 @@ def _is_scalar(value):
 
 
 def _normalize(value):
-    """Return a comparison form of ``value``: scalar lists sorted, nested containers normalized (inputs untouched)."""
+    """Return a comparison form of ``value``: every list sorted by its canonical JSON dump, nested containers normalized (inputs untouched)."""
     if isinstance(value, dict):
         return dict((k, _normalize(v)) for k, v in value.items())
     if isinstance(value, (list, tuple)):
-        if all(_is_scalar(item) for item in value):
-            return sorted(value, key=lambda item: json.dumps(item, sort_keys=True))
-        return [_normalize(item) for item in value]
+        return sorted((_normalize(item) for item in value), key=lambda item: json.dumps(item, sort_keys=True))
     return value
 
 
