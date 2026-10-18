@@ -1,0 +1,9 @@
+---
+orchestrator_projects:
+  - name: aoc-test-project-1
+    description: First test project
+    labels:
+      env: test
+  - name: aoc-test-project-2
+    description: Second test project
+...
