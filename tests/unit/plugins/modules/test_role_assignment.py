@@ -195,3 +195,26 @@ def test_info_group_filter(fake_api):
     fake_api.add("GET", LIST, 200, _list())
     run_module(info_module.main, {"group": GID}, fake_api)
     assert fake_api.calls[0]["query"]["group_id"] == GID
+
+
+def test_lookup_api_error_reports_fail_api(fake_api):
+    fake_api.add("GET", LIST, 403, {"detail": "forbidden"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(ra_module.main, {"role": "ops", "user": UID}, fake_api)
+    assert exc.value.kwargs["status"] == 403
+    assert exc.value.kwargs["msg"].startswith("Failed to look up role assignments")
+
+
+def test_info_lookup_api_error_reports_fail_api(fake_api):
+    fake_api.add("GET", LIST, 500, {"detail": "boom"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(info_module.main, {}, fake_api)
+    assert exc.value.kwargs["status"] == 500
+
+
+def test_absent_delete_404_is_noop(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_ra()))
+    fake_api.add("DELETE", LIST + "/ra1", 404, {"detail": "gone"})
+    result = run_module(ra_module.main, {"role": "ops", "user": UID, "project": PID, "state": "absent", "_ansible_diff": True}, fake_api)
+    assert result["changed"] is False
+    assert result["diff"] == {"before": {}, "after": {}}
