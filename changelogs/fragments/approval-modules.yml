@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - approval - new module that approves or rejects a pending approval request found by id or by execution and name.
+  - approval_info - new module that reads approval requests with server-side execution and status filters, optionally scoped to a project.
+...
