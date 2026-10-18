@@ -203,7 +203,7 @@ def test_user_groups_put_only_when_changed(fake_api):
     fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": [_member(G_USERS, "users"), _member(G_OPS, "ops")]})
     result = run_module(user_module.main, {"username": "alice", "groups": [G_OPS, G_USERS]}, fake_api)
     assert result["changed"] is False
-    assert result["groups"] == ["users", "ops"]
+    assert result["groups"] == ["ops", "users"]
     assert not _by_method(fake_api, "PUT")
 
     fake_api.calls[:] = []
@@ -249,3 +249,38 @@ def test_user_groups_none_leaves_memberships_untouched(fake_api):
     assert result["changed"] is False
     assert [c["method"] for c in fake_api.calls] == ["GET"]
     assert "groups" not in result
+
+
+def test_user_groups_put_failure_reports_fail_api(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": []})
+    fake_api.add("GET", GROUPS + "/" + G_OPS, 200, {"id": G_OPS, "name": "ops"})
+    fake_api.add("PUT", LIST + "/u1/groups", 422, {"title": "Unprocessable", "status": 422, "detail": "unknown group"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(user_module.main, {"username": "alice", "groups": [G_OPS]}, fake_api)
+    assert exc.value.args[0]["status"] == 422
+    assert exc.value.args[0]["msg"].startswith("Failed to update groups of user")
+
+
+def test_user_groups_unknown_uuid_fails(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_user()), query={"username": "alice"})
+    fake_api.add("GET", LIST + "/u1/groups", 200, {"resources": []})
+    fake_api.add("GET", GROUPS + "/" + G_OPS, 404, {"title": "Not Found", "status": 404, "detail": "nope"})
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(user_module.main, {"username": "alice", "groups": [G_OPS]}, fake_api)
+    assert exc.value.args[0]["msg"] == "group '{0}' not found".format(G_OPS)
+    assert not _by_method(fake_api, "PUT")
+
+
+def test_user_federated_with_metadata_change_patches_without_password(fake_api):
+    fake_api.add("GET", LIST, 200, _list(_user(auth_type="federated")), query={"username": "alice"})
+    fake_api.add("PATCH", LIST + "/u1", 200, _user(email="new@example.com"))
+    run_module(user_module.main, {"username": "alice", "email": "new@example.com", "password": PW, "update_password": "always"}, fake_api)
+    assert _by_method(fake_api, "PATCH")[0]["body"] == {"email": "new@example.com"}
+
+
+def test_user_exists_missing_without_password_fails(fake_api):
+    fake_api.add("GET", LIST, 200, _list())
+    with pytest.raises(AnsibleFailJson) as exc:
+        run_module(user_module.main, {"username": "alice", "state": "exists"}, fake_api)
+    assert "password is required" in exc.value.args[0]["msg"]

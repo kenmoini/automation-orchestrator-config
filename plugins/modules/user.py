@@ -23,7 +23,8 @@ attributes:
   check_mode:
     support: full
   diff_mode:
-    support: full
+    support: partial
+    description: Group membership changes are not shown in the diff.
 options:
   username:
     description:
@@ -40,6 +41,7 @@ options:
     description:
       - Password of the user. It must be at least 14 characters long.
       - Required to create a local user. For an existing user it is only sent when O(update_password=always).
+      - Never returned in clear text.
     type: str
   update_password:
     description:
@@ -174,13 +176,13 @@ user:
     auth_type: local
 groups:
   description: Names of the groups the user belongs to after the module ran.
-  returned: when O(groups) is set and O(state) is not V(absent)
+  returned: when O(groups) is set and the user was created or O(state) is V(present)
   type: list
   elements: str
   sample: [users, operators]
 """
 
-from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorModule, is_uuid
+from ansible_collections.kenmoini.automation_orchestrator_config.plugins.module_utils.orchestrator_api import OrchestratorAPIError, OrchestratorModule, is_uuid
 
 
 def _group_names_for_create(module, values):
@@ -197,8 +199,12 @@ def _group_names_for_create(module, values):
 
 
 def _reconcile_groups(module, user, values):
-    """Make the manual group memberships of user match values; return (changed, group names)."""
-    body = module.request("GET", "/users/{0}/groups".format(user["id"]))
+    """Make the manual group memberships of ``user`` match ``values``; return (changed, group names)."""
+    context = "Failed to update groups of user '{0}'".format(user.get("username"))
+    try:
+        body = module.request("GET", "/users/{0}/groups".format(user["id"]))
+    except OrchestratorAPIError as err:
+        module.fail_api(err, context)
     current = (body or {}).get("resources") or []
     current_names = dict((g["id"], g.get("name")) for g in current)
     target = {}
@@ -209,16 +215,21 @@ def _reconcile_groups(module, user, values):
             name = value
             if is_uuid(value):
                 obj = module.resolve_obj("group", value)
-                name = obj["name"] if obj else value
+                if obj is None:
+                    module.fail_json(msg="group '{0}' not found".format(value))
+                name = obj["name"]
         target[group_id] = name
     for group in current:
         if any(src.get("type") != "manual" for src in group.get("membership_sources") or []):
             target[group["id"]] = group.get("name")
     if set(target) == set(current_names):
-        return False, [g.get("name") for g in current]
+        return False, sorted(g.get("name") or "" for g in current)
     if not module.check_mode:
-        module.request("PUT", "/users/{0}/groups".format(user["id"]), data={"group_ids": sorted(target)})
-    return True, [target[gid] for gid in sorted(target, key=lambda gid: target[gid])]
+        try:
+            module.request("PUT", "/users/{0}/groups".format(user["id"]), data={"group_ids": sorted(target)})
+        except OrchestratorAPIError as err:
+            module.fail_api(err, context)
+    return True, sorted((name or "" for name in target.values()))
 
 
 def main():
