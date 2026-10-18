@@ -118,3 +118,15 @@ def test_group_lookup_falls_back_when_directory_forbidden(fake_api):
     assert fake_api.calls[0]["query"] == {"name": "admins", "limit": "100"}
 
     assert module.resolve_obj("group", "admins")["description"] == "full"
+
+
+@pytest.mark.parametrize("kind, path", [("role", "/api/v1/roles"), ("policy", "/api/v1/policies")])
+def test_unscoped_role_lookup_prefers_system_scope(fake_api, kind, path):
+    entries = [{"id": UID, "name": "admin", "project_id": PID}, {"id": GID, "name": "admin", "project_id": None}]
+    fake_api.add("GET", path, 200, page(entries), query={"name": "admin"})
+    module = make_module(fake_api)
+
+    assert module.resolve_id(kind, "admin") == GID
+    assert "project_id" not in fake_api.calls[-1]["query"]
+    assert module.resolve_id(kind, "admin", project_id=PID) == UID
+    assert fake_api.calls[-1]["query"]["project_id"] == PID

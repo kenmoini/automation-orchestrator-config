@@ -46,7 +46,7 @@ SERVER_NAME_FILTERS = {
 
 # Scope rules for LOOKUPS.
 SCOPE_NONE = None  # global resource
-SCOPE_QUERY = "query"  # optional project_id sent as a list query parameter
+SCOPE_QUERY = "query"  # optional project_id sent as a list query parameter; None means system scope (project_id null)
 SCOPE_CLIENT = "client"  # optional project_id matched client-side against the object's project_id
 SCOPE_PATH = "path"  # project_id required in the path template
 
@@ -377,11 +377,13 @@ class OrchestratorModule(AnsibleModule):
         label = path.rstrip("/").split("/")[-1]
         query = None
         predicate = None
-        if project_id is not None:
-            if scope == SCOPE_QUERY:
+        if scope == SCOPE_QUERY:
+            # project_id None means system scope: only objects without a project_id match.
+            predicate = _in_project(project_id)
+            if project_id is not None:
                 query = {"project_id": project_id}
-            elif scope == SCOPE_CLIENT:
-                predicate = _in_project(project_id)
+        elif scope == SCOPE_CLIENT and project_id is not None:
+            predicate = _in_project(project_id)
         try:
             if kind == "group":
                 try:
