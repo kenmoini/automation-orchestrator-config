@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - role_assignment - new module that grants and revokes roles for users and groups, globally or within a project.
+  - role_assignment_info - new module that lists role assignments with optional role, user, group, project, scope and principal type filters.
+...
