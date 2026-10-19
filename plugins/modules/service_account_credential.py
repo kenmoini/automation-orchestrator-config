@@ -24,8 +24,10 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: full
+    description: Changes are computed and reported but not made.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   service_account:
     description:

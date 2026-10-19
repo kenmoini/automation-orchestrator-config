@@ -22,6 +22,7 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: full
+    description: Changes are computed and reported but not made.
   diff_mode:
     support: partial
     description: Group membership changes are not shown in the diff.

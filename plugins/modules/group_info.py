@@ -23,6 +23,7 @@ attributes:
     description: The module only reads data.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   name:
     description: Return only the group with exactly this name.

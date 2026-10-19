@@ -22,8 +22,10 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: full
+    description: Changes are computed and reported but not made.
   diff_mode:
     support: full
+    description: Shows the fields that change, before and after.
 options:
   role:
     description:

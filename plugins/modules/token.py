@@ -25,6 +25,7 @@ attributes:
     description: The module only logs in and does not modify any state.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 seealso:
   - module: kenmoini.automation_orchestrator_config.api
 """

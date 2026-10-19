@@ -24,6 +24,7 @@ attributes:
     description: Reads the execution and reports whether it would be cancelled, without cancelling it.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   id:
     description: UUID of the execution to cancel.

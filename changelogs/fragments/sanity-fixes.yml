@@ -1,0 +1,7 @@
+---
+bugfixes:
+  - all modules - document the ``check_mode`` and ``diff_mode`` attributes with a description so ``ansible-test sanity`` (validate-modules) passes.
+trivial:
+  - setting, integration - rename throwaway loop variables and replace a lambda with a function to satisfy the ansible-test pylint rules.
+  - unit tests - move the shared ``fake_api`` and ``clean_orchestrator_env`` fixtures into a single ``tests/unit/plugins/conftest.py``.
+...

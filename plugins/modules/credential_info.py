@@ -24,6 +24,7 @@ attributes:
     description: The module only reads data.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   project:
     description: Name or ID of the project whose credentials are listed.

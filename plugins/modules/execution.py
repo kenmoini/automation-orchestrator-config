@@ -25,6 +25,7 @@ attributes:
     description: Looks up the workflow and trigger but does not launch the execution; reports C(changed=true) with no execution.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   workflow:
     description: Name or UUID of the workflow to run.

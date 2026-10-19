@@ -25,8 +25,10 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: full
+    description: Changes are computed and reported but not made.
   diff_mode:
     support: full
+    description: Shows the fields that change, before and after.
 options:
   name:
     description:
@@ -162,7 +164,7 @@ def main():
         wanted = [(params["name"], params["value"])]
     else:
         wanted = list(params["settings"].items())
-    keys = [key for key, _ in wanted]
+    keys = [key for key, _value in wanted]
 
     try:
         if len(wanted) == 1:
@@ -191,13 +193,13 @@ def main():
         else:
             changes.append((key, value))
             result[key] = current.get("default_value") if value is None else value
-    changed_keys = sorted(key for key, _ in changes)
+    changed_keys = sorted(key for key, _value in changes)
 
     module._diff = {"before": {}, "after": {}}
     if changes:
         module._diff = {
-            "before": dict((key, rows[key].get("effective_value")) for key, _ in changes),
-            "after": dict((key, result[key]) for key, _ in changes),
+            "before": dict((key, rows[key].get("effective_value")) for key, _value in changes),
+            "after": dict((key, result[key]) for key, _value in changes),
         }
     if changes and not module.check_mode:
         try:
@@ -211,7 +213,7 @@ def main():
                 updated = module.request("PATCH", "/settings", data={"updates": [{"key": key, "value": value} for key, value in changes]})
                 updated_rows = updated.get("resources") or [] if isinstance(updated, dict) else []
         except OrchestratorAPIError as err:
-            module.fail_api(err, "Failed to update setting(s) {0}".format(", ".join(key for key, _ in changes)))
+            module.fail_api(err, "Failed to update setting(s) {0}".format(", ".join(key for key, _value in changes)))
         for row in updated_rows:
             if row.get("key") in result and "effective_value" in row:
                 result[row["key"]] = row["effective_value"]

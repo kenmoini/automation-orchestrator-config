@@ -25,6 +25,7 @@ attributes:
     description: The module only reads data.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   id:
     description: UUID of one execution. Returns an empty list when it does not exist. Mutually exclusive with O(workflow).

@@ -22,9 +22,11 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: partial
+    description: Only read-only requests are sent.
     details: GET requests are sent, other methods are skipped and reported as changed.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   endpoint:
     description:

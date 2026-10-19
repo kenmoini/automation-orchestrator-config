@@ -23,6 +23,7 @@ attributes:
     description: The module only reads data.
   diff_mode:
     support: none
+    description: The module does not produce a diff.
 options:
   role:
     description: Name or UUID of a role. Return only assignments of this role. A UUID is converted to the role name.

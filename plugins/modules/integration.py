@@ -367,6 +367,10 @@ def _model_key(entry):
     return entry.get("model_id") or entry.get("name")
 
 
+def _tool_key(entry):
+    return entry["name"]
+
+
 def _find(items, key, fields):
     """Return the first item whose ``fields`` (tried in order) equals ``key``, or ``None``."""
     for field in fields:
@@ -493,7 +497,7 @@ def _reconcile_rows(module, integration, name, kind, entries):
     if kind == "models":
         label, flags, key_of, fields = "Model", MODEL_FLAGS, _model_key, ("model_id", "name")
     else:
-        label, flags, key_of, fields = "Tool", TOOL_FLAGS, (lambda entry: entry["name"]), ("name", "namespaced_name")
+        label, flags, key_of, fields = "Tool", TOOL_FLAGS, _tool_key, ("name", "namespaced_name")
     path = "{0}/{1}/{2}".format(INTEGRATIONS, integration["id"], kind)
     context = "Failed to update {0} for integration '{1}'".format(kind, name)
     rows = module.get_all(path, context=context)
