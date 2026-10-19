@@ -4,20 +4,35 @@ name: Deploy Collection - kenmoini.automation_orchestrator_config
 # Trigger the workflow however you prefer
 on: # yamllint disable-line rule:truthy
   push:
-    # tags:
-    #   - v*
-    paths:
-      - galaxy.yml
+    tags:
+      - v*
+    # paths:
+    #   - galaxy.yml
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy'
+        required: true
+        default: 'v0.0.1'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Build and Deploy Collection if tag is provided via a manual workflow dispatch
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
+        uses: artis3n/ansible_galaxy_collection@v3
+        with:
+          api_key: '${{ secrets.GALAXY_API_KEY }}'
+          collection_dir: '.'
+          galaxy_version: '${{ github.event.inputs.tag }}'
 
       - name: Build and Deploy Collection
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: artis3n/ansible_galaxy_collection@v3
         with:
           api_key: '${{ secrets.GALAXY_API_KEY }}'
