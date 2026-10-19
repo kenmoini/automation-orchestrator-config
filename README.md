@@ -1,6 +1,11 @@
 # kenmoini.automation_orchestrator_config
 
 <!-- Badges: add the CI status badge here once the GitHub Actions workflow is published. -->
+[![Ansible Galaxy](https://img.shields.io/badge/ansible-galaxy-Galaxy?style=flat&logo=ansible&logoColor=%23000&labelColor=%2300aec8&color=%23000)
+](https://galaxy.ansible.com/ui/repo/published/kenmoini/automation_orchestrator_config/)
+[![CI](https://github.com/kenmoini/automation-orchestrator-config/actions/workflows/ci.yml/badge.svg)](https://github.com/kenmoini/automation-orchestrator-config/actions/workflows/ci.yml)
+[![Deploy Collection - kenmoini.automation_orchestrator_config](https://github.com/kenmoini/automation-orchestrator-config/actions/workflows/release.yml/badge.svg)](https://github.com/kenmoini/automation-orchestrator-config/actions/workflows/release.yml)
+
 
 Configuration as code for Red Hat Automation Orchestrator (tech preview, API 1.3.1). The collection is modeled on `infra.aap_configuration` and ships both the Python modules for every API resource and the roles that manage those resources from plain variable lists, so a whole instance can be described in YAML and applied idempotently.
 
