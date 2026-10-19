@@ -14,7 +14,7 @@ on: # yamllint disable-line rule:truthy
       tag:
         description: 'Tag to deploy'
         required: true
-        default: 'v0.0.1'
+        default: '0.0.1'
 
 jobs:
   deploy:
@@ -31,10 +31,19 @@ jobs:
           collection_dir: '.'
           galaxy_version: '${{ github.event.inputs.tag }}'
 
+      - name: Strip v prefix from tag
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        id: parse_tag
+        run: |
+          # ${GITHUB_REF_NAME#v} removes a leading 'v' if present
+          CLEAN_TAG=${GITHUB_REF_NAME#v}
+          echo "clean_tag=$CLEAN_TAG" >> $GITHUB_OUTPUT
+
       - name: Build and Deploy Collection
         if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: artis3n/ansible_galaxy_collection@v3
         with:
           api_key: '${{ secrets.GALAXY_API_KEY }}'
           collection_dir: '.'
+          galaxy_version: '${{ steps.parse_tag.outputs.clean_tag }}'
 ...
