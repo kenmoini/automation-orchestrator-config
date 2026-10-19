@@ -14,6 +14,8 @@ tags:
   - automation
   - orchestrator
   - configuration
+  - infrastructure
+  - tools
   - code
   - cac
 repository: https://github.com/kenmoini/automation-orchestrator-config
