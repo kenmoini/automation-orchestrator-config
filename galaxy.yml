@@ -6,15 +6,17 @@ readme: README.md
 authors:
   - Ken Moini
 description: Configuration as code for Red Hat Automation Orchestrator, with modules and roles.
-license:
-  - GPL-3.0-or-later
 license_file: LICENSE
 tags:
   - automation_platform
+  - automation_orchestrator
+  - ansible
+  - automation
   - orchestrator
   - configuration
-  - infrastructure
-repository: https://github.com/kenmoini/automation_orchestrator_configuration
+  - code
+  - cac
+repository: https://github.com/kenmoini/automation-orchestrator-config
 build_ignore:
   - .github
   - .venv
