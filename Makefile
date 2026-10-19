@@ -28,8 +28,7 @@ sync:
 	mkdir -p $(SYNC_DIR) .ansible/tmp
 	rsync -a --delete --exclude .git --exclude __pycache__ --exclude .venv --exclude build --exclude .ansible --exclude .superpowers --exclude tests/output ./ $(SYNC_DIR)/
 
-lint:
-	mkdir -p .ansible/tmp
+lint: link
 	# --all-files only sees tracked files; include new untracked ones so they are linted before first commit
 	.venv/bin/pre-commit run --files $$(git ls-files --cached --others --exclude-standard)
 

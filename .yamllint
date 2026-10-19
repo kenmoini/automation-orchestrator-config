@@ -26,4 +26,8 @@ rules:
   truthy:
     level: error
     allowed-values: ["true", "false"]
+  # Required by ansible-lint's yaml rule; without these it ignores this file and disables fix mode.
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
 ...

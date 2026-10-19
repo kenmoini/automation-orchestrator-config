@@ -23,8 +23,15 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/pip install -r .github/requirements.txt
+      # ansible-lint syntax-checks the playbooks, which reference the collection by FQCN. Ansible
+      # resolves a collection from any ansible_collections/<namespace>/<name> directory on the
+      # collections path, so a symlink to the checkout is enough; no build is needed.
+      - name: Link the checkout into a collections path
+        run: make link
       - name: Run pre-commit
         run: .venv/bin/pre-commit run --all-files
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/build
 
   sanity-units:
     runs-on: ubuntu-latest
