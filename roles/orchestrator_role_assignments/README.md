@@ -94,12 +94,18 @@ Each assignment is identified by `role` and one of `user`, `group` or `service_a
 orchestrator_role_assignments:
   - role: workflow-viewer
     user: jdoe
+
+  - role: admin
+    group: global-admins
+
   - role: workflow-viewer
     group: platform-admins
     project: Platform Team
+
   - role: workflow-viewer
     service_account: ci-pipeline
     project: Platform Team
+
   - role: workflow-viewer
     user: old-user
     state: absent

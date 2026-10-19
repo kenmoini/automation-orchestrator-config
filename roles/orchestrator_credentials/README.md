@@ -103,6 +103,19 @@ orchestrator_credentials:
   - name: old-credential
     project: Platform Team
     state: absent
+
+  - name: OS-T-HubAAP
+    description: Ansible Automation Platform (AAP) credentials for OpenShell Test
+    credential_type: Ansible Automation Platform
+    project: openshell-test
+    inputs:
+      username: admin
+      password: notpassword
+      # Or
+      # token: ey...
+    update_secrets: false
+    labels:
+      env: test
 ```
 
 ### Json Example

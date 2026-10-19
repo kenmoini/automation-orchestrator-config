@@ -96,16 +96,39 @@ orchestrator_identity_providers:
     description: Corporate OIDC login
     enabled: true
     configuration:
+      provider_type: oidc
+      idp_type: custom
       issuer_url: https://sso.example.com/realms/corp
+      redirect_uri: https://orchestrator.example.com/api/v1/auth/oidc/callback
+      disable_tls_verify: false
       client_id: orchestrator
       client_secret: '{{ vault_sso_client_secret }}'
-      redirect_uri: https://orchestrator.example.com/callback
-      scopes:
-        - openid
-        - profile
-        - email
+      scopes: "openid profile email"
+      allow_all_authenticated: false
+      auto_discovery: true
+      enable_rp_initiated_logout: false
+      claim_mapping:
+        subject: sub
+        email: email
+        username: preferred_username
+        first_name: given_name
+        last_name: family_name
+      group_jmespath_expression: "groups[*]"
+      group_mapping_entries:
+        - idp_group_value: domain-admins
+          mapped_group: admins
+        - idp_group_value: compliance-spies
+          mapped_group: auditors
+        - idp_group_value: automation-users
+          mapped_group: users
+      authorization_endpoint: null
+      end_session_endpoint: null
+      jwks_uri: null
+      token_endpoint: null
+      userinfo_endpoint: null
     update_secrets: false
     test: true
+
   - name: old-sso
     state: absent
 ```

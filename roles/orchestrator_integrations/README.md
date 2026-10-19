@@ -116,8 +116,29 @@ orchestrator_integrations:
         enabled: true
         is_default: true
     validate: true
+
   - name: old-integration
     state: absent
+
+  - name: OpenShell Test AAP
+    description: OpenShell Test Ansible Automation Platform (AAP) integration
+    management_credential: OS-T-HubAAP
+    management_credential_project: openshell-test
+    integration_type: ansible_automation_platform
+    configuration:
+      integration_type: ansible_automation_platform
+      base_url: https://example.com
+      insecure_skip_tls_verify: true
+      allow_http: false
+      # ca_certificate: |
+      #   -----BEGIN CERTIFICATE-----
+      #   MII...
+      #   -----END CERTIFICATE-----
+    scope: global # or project
+    # projects:
+    #   - openshell-test
+    validate: false
+    discover: false
 ```
 
 ### Json Example
