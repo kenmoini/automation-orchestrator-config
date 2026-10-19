@@ -7,4 +7,15 @@ orchestrator_credentials:
     inputs:
       token: changeme
     update_secrets: false
+
+  - name: OS-T-HubAAP
+    description: OpenShell Test Hub Ansible Automation Platform (AAP) credentials
+    credential_type: Ansible Automation Platform
+    project: openshell-test
+    inputs:
+      username: admin
+      password: notpassword
+    update_secrets: false
+    labels:
+      env: test
 ...
